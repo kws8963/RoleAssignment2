@@ -1,8 +1,13 @@
 /**
- * TESLA CLASSROOM - script.js
- * Minimalist Autonomous Classroom Role Assignment Engine
- * Inspired by Tesla UI: Electric chime sound synthesis, cyber particles,
- * Fisher-Yates shuffle algorithm, A4 print layout, and Google Apps Script sync.
+ * CLASSROOM OS - script.js
+ * Modern Minimalist Autonomous Classroom Role Assignment Engine
+ * Features:
+ * - Fullscreen Backdrop Blur & 1-by-1 Sequential Role Reveal (1 sec interval)
+ * - Fast-Forward (즉시 일괄 공개) Button
+ * - Fisher-Yates Stochastic Matching Algorithm
+ * - Web Audio API Harmonic Synthesis & Cyber Particles
+ * - A4 Print Sheet Synchronization
+ * - Google Apps Script / TSV / CSV Export
  */
 
 (function () {
@@ -92,7 +97,7 @@
     }
   ];
 
-  const AVATARS = ['⚡', '🤖', '🚀', '🌟', '🎯', '💡', '🛡️', '🛸', '🧭', '🔥', '⚙️', '💎'];
+  const AVATARS = ['⚡', '💎', '🚀', '🌟', '🎯', '💡', '🛡️', '🛸', '🧭', '🔥', '⚙️', '✨'];
 
   // ==========================================
   // 2. 상태 관리 (State)
@@ -102,16 +107,18 @@
     students: [...DEFAULT_STUDENTS],
     roles: JSON.parse(JSON.stringify(DEFAULT_ROLES)),
     assignments: [],
-    isShuffling: false,
+    pendingAssignments: [],
+    isRevealing: false,
+    revealTimer: null,
     soundEnabled: true,
     sheetUrl: '',
     swapSourceIndex: null
   };
 
-  const STORAGE_KEY = 'tesla_classroom_role_v2';
+  const STORAGE_KEY = 'classroom_os_role_v3';
 
   // ==========================================
-  // 3. Web Audio API 테슬라 일렉트릭 사운드 엔진
+  // 3. Web Audio API 신스 사운드 시스템
   // ==========================================
   const SoundFX = {
     ctx: null,
@@ -125,28 +132,34 @@
       }
     },
 
-    // 셔플 중 테슬라 하이테크 레이더 틱 사운드
-    playTick() {
+    // 1명씩 공개될 때마다 살짝 피치가 올라가는 경쾌한 사운드
+    playRevealTick(index = 0) {
       if (!state.soundEnabled) return;
       this.init();
       if (!this.ctx) return;
 
       const now = this.ctx.currentTime;
+      const baseFreq = 440; // A4
+      const scale = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19];
+      const semitone = scale[index % scale.length];
+      const freq = baseFreq * Math.pow(2, semitone / 12);
+
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600 + Math.random() * 300, now);
-      gain.gain.setValueAtTime(0.04, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.05);
+      osc.stop(now + 0.3);
     },
 
-    // 테슬라 파워온 느낌의 미래지향적 일렉트릭 챠임
+    // 최종 완료 팡파르 화음
     playFanfare() {
       if (!state.soundEnabled) return;
       this.init();
@@ -159,16 +172,16 @@
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'triangle';
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now + idx * 0.08);
 
         gain.gain.setValueAtTime(0.08, now + idx * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.6);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.65);
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start(now + idx * 0.08);
-        osc.stop(now + idx * 0.08 + 0.65);
+        osc.stop(now + idx * 0.08 + 0.7);
       });
     },
 
@@ -183,19 +196,19 @@
       const gain = this.ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(750, now);
       gain.gain.setValueAtTime(0.03, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.04);
+      osc.stop(now + 0.05);
     }
   };
 
   // ==========================================
-  // 4. 사이버 테슬라 스파크 파티클 효과 (Confetti)
+  // 4. 세련된 파티클 효과 (Confetti)
   // ==========================================
   const Confetti = {
     canvas: null,
@@ -220,21 +233,20 @@
     burst() {
       if (!this.canvas) return;
       this.resize();
-      // 테슬라 레드, 퓨어 화이트, 크롬 실버, 사이버 시안
-      const colors = ['#ffffff', '#e82127', '#38bdf8', '#d0d1d2', '#ffffff', '#e82127'];
-      const count = 100;
+      const colors = ['#e82127', '#0f172a', '#38bdf8', '#fbbf24', '#ffffff', '#e82127'];
+      const count = 120;
 
       for (let i = 0; i < count; i++) {
         this.particles.push({
           x: this.canvas.width * (0.35 + Math.random() * 0.3),
           y: this.canvas.height * 0.35,
-          vx: (Math.random() - 0.5) * 20,
-          vy: (Math.random() - 0.85) * 18,
-          w: Math.random() * 8 + 4,
-          h: Math.random() * 4 + 2,
+          vx: (Math.random() - 0.5) * 22,
+          vy: (Math.random() - 0.85) * 20,
+          w: Math.random() * 9 + 4,
+          h: Math.random() * 5 + 3,
           color: colors[Math.floor(Math.random() * colors.length)],
           rotation: Math.random() * 360,
-          rotationSpeed: (Math.random() - 0.5) * 12,
+          rotationSpeed: (Math.random() - 0.5) * 14,
           opacity: 1
         });
       }
@@ -251,7 +263,7 @@
         const p = this.particles[i];
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.4;
+        p.vy += 0.45;
         p.vx *= 0.98;
         p.rotation += p.rotationSpeed;
         p.opacity -= 0.012;
@@ -294,7 +306,7 @@
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
     } catch (e) {
-      console.warn('Storage save failed:', e);
+      console.warn('Storage save error:', e);
     }
   }
 
@@ -311,7 +323,7 @@
         if (typeof parsed.soundEnabled === 'boolean') state.soundEnabled = parsed.soundEnabled;
       }
     } catch (e) {
-      console.warn('Storage load failed:', e);
+      console.warn('Storage load error:', e);
     }
   }
 
@@ -336,7 +348,6 @@
     const printFooterClass = document.getElementById('printFooterClass');
     if (printFooterClass) printFooterClass.textContent = state.className;
 
-    // 배정 일자 표기
     const now = new Date();
     const dateFormatted = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}`;
     const dateFull = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
@@ -347,24 +358,22 @@
     const printDateText = document.getElementById('printDateText');
     if (printDateText) printDateText.textContent = dateFull;
 
-    // 상태 표시 바
     const statusText = document.getElementById('assignStatusText');
     const statusSub = document.getElementById('assignStatusPill');
     if (state.assignments.length > 0) {
       if (statusText) {
         statusText.textContent = 'ACTIVE';
-        statusText.style.color = '#ffffff';
+        statusText.style.color = '#16a34a';
       }
       if (statusSub) statusSub.textContent = '배정 완료 (100%)';
     } else {
       if (statusText) {
         statusText.textContent = 'READY';
-        statusText.style.color = 'var(--tesla-red)';
+        statusText.style.color = 'var(--accent-red)';
       }
       if (statusSub) statusSub.textContent = '배정 대기 중 (STANDBY)';
     }
 
-    // 사운드 토글 버튼
     const soundBtn = document.getElementById('btnSoundToggle');
     if (soundBtn) {
       if (state.soundEnabled) {
@@ -375,7 +384,7 @@
     }
   }
 
-  // 카드 그리드 렌더링
+  // 메인 카드 그리드 렌더링
   function renderCards(isAnimating = false) {
     const grid = document.getElementById('cardsGrid');
     if (!grid) return;
@@ -462,7 +471,7 @@
   }
 
   // ==========================================
-  // 7. Fisher-Yates 무작위 배정 로직 & 룰렛
+  // 7. Fisher-Yates 셔플 & 1초에 1명씩 공개 시스템
   // ==========================================
   function shuffleArray(array) {
     const arr = [...array];
@@ -473,8 +482,9 @@
     return arr;
   }
 
-  function assignRolesWithRoulette() {
-    if (state.isShuffling) return;
+  // 역할 배정 시작 (화면 흐려짐 및 순차 공개 오버레이 트리거)
+  function startSequentialAssignment() {
+    if (state.isRevealing) return;
 
     if (state.students.length === 0) {
       showToast('⚠️ 학생 명단이 없습니다. CONFIG에서 추가하세요.', 'info');
@@ -485,15 +495,10 @@
       return;
     }
 
-    state.isShuffling = true;
+    state.isRevealing = true;
     SoundFX.init();
 
-    const btnAssign = document.getElementById('btnAssign');
-    if (btnAssign) {
-      btnAssign.disabled = true;
-      btnAssign.style.opacity = '0.6';
-    }
-
+    // 셔플된 매칭 목록 사전 생성
     const students = [...state.students];
     const roles = [...state.roles];
 
@@ -506,36 +511,9 @@
       });
     }
 
-    const cards = document.querySelectorAll('.role-card');
-    cards.forEach(c => c.classList.add('shuffling'));
-
-    let tickCount = 0;
-    const maxTicks = 15;
-    const interval = setInterval(() => {
-      tickCount++;
-      SoundFX.playTick();
-
-      cards.forEach(card => {
-        const titleEl = card.querySelector('.role-title');
-        const iconEl = card.querySelector('.role-icon');
-        if (titleEl && iconEl) {
-          const randomRole = roles[Math.floor(Math.random() * roles.length)];
-          titleEl.textContent = randomRole.name;
-          iconEl.textContent = randomRole.icon || '⚡';
-        }
-      });
-
-      if (tickCount >= maxTicks) {
-        clearInterval(interval);
-        finalizeAssignment(students, roles);
-      }
-    }, 80);
-  }
-
-  function finalizeAssignment(students, roles) {
     const shuffledRoles = shuffleArray(roles);
 
-    state.assignments = students.map((student, idx) => {
+    state.pendingAssignments = students.map((student, idx) => {
       const assignedRole = shuffledRoles[idx % shuffledRoles.length];
       return {
         student: student,
@@ -547,27 +525,113 @@
       };
     });
 
-    state.isShuffling = false;
-    const btnAssign = document.getElementById('btnAssign');
-    if (btnAssign) {
-      btnAssign.disabled = false;
-      btnAssign.style.opacity = '1';
+    // 화면 흐려짐 오버레이 활성화
+    const overlay = document.getElementById('revealOverlay');
+    overlay.style.display = 'flex';
+
+    // 히스토리 스트립 초기화
+    const historyStrip = document.getElementById('revealHistoryStrip');
+    historyStrip.innerHTML = '';
+
+    let currentIndex = 0;
+    const totalCount = state.pendingAssignments.length;
+
+    // 첫 번째 학생 즉시 공개
+    revealOneStudent(currentIndex, totalCount);
+
+    // 1초 간격으로 1명씩 공개
+    state.revealTimer = setInterval(() => {
+      currentIndex++;
+      if (currentIndex < totalCount) {
+        revealOneStudent(currentIndex, totalCount);
+      } else {
+        // 모든 인원 공개 완료
+        finishAssignment(true);
+      }
+    }, 1000);
+  }
+
+  // 1명의 학생을 스포트라이트 카드에 노출
+  function revealOneStudent(index, total) {
+    const item = state.pendingAssignments[index];
+    if (!item) return;
+
+    // 카운터 및 진행률 갱신
+    document.getElementById('revealCounter').textContent = `${index + 1} / ${total}`;
+    const progressPercent = Math.min(100, Math.round(((index + 1) / total) * 100));
+    document.getElementById('revealProgressFill').style.width = `${progressPercent}%`;
+
+    // 스포트라이트 카드 데이터 바인딩
+    document.getElementById('spotlightOrderTag').textContent = `NO. ${String(index + 1).padStart(2, '0')}`;
+    document.getElementById('spotlightAvatar').textContent = item.avatar;
+    document.getElementById('spotlightStudentName').textContent = item.student;
+    document.getElementById('spotlightRoleIcon').textContent = item.icon;
+    document.getElementById('spotlightRoleName').textContent = item.role;
+    document.getElementById('spotlightRoleDesc').textContent = item.desc;
+
+    // 카드 애니메이션 리플레이
+    const spotlightCard = document.getElementById('revealSpotlightCard');
+    spotlightCard.classList.remove('pop');
+    void spotlightCard.offsetWidth; // trigger reflow
+    spotlightCard.classList.add('pop');
+
+    // 하단 히스토리 칩 추가
+    const historyStrip = document.getElementById('revealHistoryStrip');
+    const chip = document.createElement('div');
+    chip.className = 'reveal-chip';
+    chip.innerHTML = `
+      <span>${item.avatar}</span>
+      <span class="reveal-chip-name">${escapeHtml(item.student)}</span>
+      <span style="color:#94a3b8;">→</span>
+      <span class="reveal-chip-role">${item.icon} ${escapeHtml(item.role)}</span>
+    `;
+    historyStrip.appendChild(chip);
+    historyStrip.scrollLeft = historyStrip.scrollWidth;
+
+    // 사운드 재생
+    SoundFX.playRevealTick(index);
+  }
+
+  // 즉시 일괄 공개 (Fast-forward) 버튼 처리
+  function fastForwardReveal() {
+    if (!state.isRevealing) return;
+    clearInterval(state.revealTimer);
+    finishAssignment(false);
+  }
+
+  // 최종 배정 확정 및 오버레이 닫기
+  function finishAssignment(isNaturalFinish = true) {
+    if (state.revealTimer) {
+      clearInterval(state.revealTimer);
+      state.revealTimer = null;
     }
 
-    renderCards(true);
-    updateHeaderSummary();
-    saveStateToStorage();
+    state.assignments = [...state.pendingAssignments];
+    state.isRevealing = false;
 
+    // 팡파르 및 축하 파티클
     SoundFX.playFanfare();
     Confetti.burst();
-    showToast('⚡ ALL ROLES DEPLOYED: 1인 1역할 배정이 완료되었습니다.', 'success');
+
+    // 약간의 딜레이 후 오버레이 닫고 메인 그리드 노출
+    const delay = isNaturalFinish ? 900 : 250;
+    setTimeout(() => {
+      const overlay = document.getElementById('revealOverlay');
+      overlay.style.display = 'none';
+
+      renderCards(true);
+      updateHeaderSummary();
+      saveStateToStorage();
+
+      showToast('🎉 모든 학생의 1인 1역할 배정이 완료되었습니다!', 'success');
+    }, delay);
   }
 
   // ==========================================
   // 8. 개별 스왑 (SWAP) 모달
   // ==========================================
   function openSwapModal(index) {
-    if (state.isShuffling) return;
+    if (state.isRevealing) return;
     const currentList = state.assignments.length > 0 
       ? state.assignments 
       : state.students.map((s, i) => ({
@@ -583,7 +647,7 @@
 
     document.getElementById('swapTargetDesc').innerHTML = `
       현재 <strong>[${escapeHtml(currentStudent.student)}]</strong> 학생의 배정 역할: 
-      <span style="color: var(--tesla-red); font-weight: 700;">${currentStudent.icon} ${escapeHtml(currentStudent.role)}</span><br>
+      <span style="color: var(--accent-red); font-weight: 700;">${currentStudent.icon} ${escapeHtml(currentStudent.role)}</span><br>
       어느 학생과 역할을 맞바꾸시겠습니까?
     `;
 
@@ -754,7 +818,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `TESLA_CLASSROOM_${state.className}_${dateStr}.csv`;
+    link.download = `CLASSROOM_OS_${state.className}_${dateStr}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -839,10 +903,17 @@
   // 12. 이벤트 바인딩
   // ==========================================
   function initEvents() {
+    // [🎲 역할 배정하기] 버튼 클릭 -> 순차 공개 오버레이 시작
     document.getElementById('btnAssign').addEventListener('click', () => {
-      assignRolesWithRoulette();
+      startSequentialAssignment();
     });
 
+    // ⏩ 즉시 일괄 공개 버튼
+    document.getElementById('btnFastForward').addEventListener('click', () => {
+      fastForwardReveal();
+    });
+
+    // 초기화 버튼
     document.getElementById('btnReset').addEventListener('click', () => {
       if (confirm('현재 배정된 역할을 초기화하시겠습니까?')) {
         state.assignments = [];
@@ -853,6 +924,7 @@
       }
     });
 
+    // A4 인쇄하기
     document.getElementById('btnPrint').addEventListener('click', () => {
       SoundFX.playClick();
       renderPrintTable(state.assignments.length > 0 ? state.assignments : state.students.map((s, i) => ({
@@ -865,11 +937,12 @@
       window.print();
     });
 
+    // 사운드 토글
     document.getElementById('btnSoundToggle').addEventListener('click', () => {
       state.soundEnabled = !state.soundEnabled;
       updateHeaderSummary();
       saveStateToStorage();
-      if (state.soundEnabled) SoundFX.playTick();
+      if (state.soundEnabled) SoundFX.playClick();
     });
 
     // 명단 편집 모달
@@ -937,10 +1010,12 @@
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
         const modalOpen = document.querySelector('.modal-overlay[style*="display: flex"]');
-        if (!modalOpen) {
+        if (!modalOpen && !state.isRevealing) {
           e.preventDefault();
-          assignRolesWithRoulette();
+          startSequentialAssignment();
         }
+      } else if (e.code === 'Escape' && state.isRevealing) {
+        fastForwardReveal();
       }
     });
   }

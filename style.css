@@ -1,36 +1,40 @@
 /* ==========================================================================
-   TESLA CLASSROOM - style.css
-   Inspired by Tesla.com: Ultra-Minimalism, Deep Matte Black, Sleek Typography,
-   Precision Specs HUD, Glassmorphism, and A4 Board Print Optimization.
+   CLASSROOM OS - style.css
+   Modern High-End Minimalist White Aesthetic, Ultra-Clean Typography,
+   Fullscreen Blur & Sequential 1-by-1 Role Reveal Overlay, and A4 Board Print.
    ========================================================================== */
 
 :root {
   --font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
-  /* 테슬라 시그니처 다크 모노크롬 팔레트 */
-  --tesla-black: #050608;
-  --tesla-dark-bg: #0b0c10;
-  --tesla-panel-bg: #12141a;
-  --tesla-card-bg: rgba(22, 25, 33, 0.82);
-  --tesla-card-hover: rgba(28, 32, 42, 0.95);
+  /* 클린 화이트 & 프리미엄 모노크롬 팔레트 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --card-border-hover: #cbd5e1;
+  --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --card-shadow-hover: 0 16px 32px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
 
-  --tesla-red: #e82127;
-  --tesla-red-glow: rgba(232, 33, 39, 0.35);
+  --accent-red: #e82127;
+  --accent-red-light: #fee2e2;
 
-  --tesla-white: #ffffff;
-  --tesla-offwhite: #f4f4f4;
-  --tesla-light-gray: #d0d1d2;
-  --tesla-gray: #8e9095;
-  --tesla-dark-gray: #393c41;
-  --tesla-border: rgba(255, 255, 255, 0.1);
-  --tesla-border-hover: rgba(255, 255, 255, 0.25);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
 
-  --tesla-radius-sm: 4px;
-  --tesla-radius-md: 8px;
-  --tesla-radius-lg: 12px;
-  --tesla-radius-pill: 9999px;
+  --btn-dark: #111827;
+  --btn-dark-hover: #000000;
+  
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
 
-  --transition-smooth: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* 1. 기본 리셋 */
@@ -42,30 +46,30 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body.tesla-theme {
+body.modern-white-theme {
   font-family: var(--font-family);
-  background-color: var(--tesla-black);
-  color: var(--tesla-offwhite);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
   overflow-x: hidden;
   position: relative;
 }
 
-/* 배경 미세한 그라디언트 앰비언트 (테슬라 사이버 쇼룸 느낌) */
-body.tesla-theme::before {
+/* 상단 앰비언트 글로우 */
+body.modern-white-theme::before {
   content: '';
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 600px;
-  background: radial-gradient(circle at 50% -100px, rgba(232, 33, 39, 0.12) 0%, rgba(18, 20, 26, 0.4) 45%, transparent 70%);
+  height: 480px;
+  background: radial-gradient(circle at 50% -80px, rgba(232, 33, 39, 0.06) 0%, rgba(241, 245, 249, 0.5) 40%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* 캔버스 파티클 레이어 */
+/* 폭죽 캔버스 */
 #confettiCanvas {
   position: fixed;
   top: 0;
@@ -73,174 +77,491 @@ body.tesla-theme::before {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 12000;
 }
 
-/* 2. 글로벌 플로팅 내비게이션 바 (Tesla Header) */
-.tesla-navbar {
+/* ==========================================================================
+   2. 순차 공개(1초에 1명씩) 전체화면 블러 오버레이
+   ========================================================================== */
+.reveal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: revealFadeIn 0.35s ease forwards;
+}
+
+.reveal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+@keyframes revealFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.reveal-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 오버레이 상단 바 */
+.reveal-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.reveal-status-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(10px);
+}
+
+.reveal-pulse-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  box-shadow: 0 0 10px var(--accent-red);
+  animation: pulseDot 1s infinite;
+}
+
+.reveal-status-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+}
+
+.reveal-counter {
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+/* ⏩ 즉시 일괄 공개 버튼 */
+.btn-fast-forward {
+  background: #ffffff;
+  color: #0f172a;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 10px 22px;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-smooth);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-fast-forward:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.btn-fast-forward:active {
+  transform: translateY(0);
+}
+
+/* 진행률 바 */
+.reveal-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.reveal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffffff, var(--accent-red));
+  border-radius: var(--radius-pill);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 1명씩 중앙에 드라마틱하게 나타나는 스포트라이트 카드 */
+.reveal-spotlight-area {
+  display: flex;
+  justify-content: center;
+}
+
+.reveal-spotlight-card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  animation: spotlightPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.reveal-spotlight-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #111827, var(--accent-red), #111827);
+}
+
+@keyframes spotlightPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.spotlight-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spotlight-tag {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--accent-red);
+}
+
+.spotlight-live-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: #f1f5f9;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.spotlight-student-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.spotlight-avatar {
+  font-size: 2.2rem;
+  width: 58px;
+  height: 58px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spotlight-student-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.spotlight-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.spotlight-name {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.spotlight-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--card-border);
+}
+
+.spotlight-role-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.spotlight-role-icon {
+  font-size: 2.4rem;
+  min-width: 60px;
+  height: 60px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spotlight-role-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.spotlight-role-sub {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent-red);
+}
+
+.spotlight-role-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.spotlight-desc {
+  font-size: 0.96rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+}
+
+/* 하단 누적 칩 스트립 */
+.reveal-history-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.reveal-history-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.reveal-chip {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  animation: chipSlide 0.2s ease;
+}
+
+@keyframes chipSlide {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.reveal-chip-name {
+  font-weight: 700;
+}
+
+.reveal-chip-role {
+  color: var(--accent-red);
+}
+
+/* ==========================================================================
+   3. 글로벌 내비게이션 바 (화이트 & 글래스)
+   ========================================================================== */
+.modern-navbar {
   position: sticky;
   top: 0;
   width: 100%;
-  background: rgba(5, 6, 8, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--tesla-border);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--card-border);
   z-index: 1000;
   transition: var(--transition-smooth);
 }
 
 .nav-container {
-  max-width: 1380px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 14px 28px;
+  padding: 14px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
 }
 
-/* 테슬라 로고 */
-.tesla-brand {
+.modern-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   cursor: pointer;
 }
 
-.tesla-logo-svg {
-  width: 105px;
-  height: 18px;
-  color: var(--tesla-white);
-  fill: currentColor;
-  transition: opacity 0.2s;
+.modern-logo-svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-primary);
 }
 
-.tesla-brand:hover .tesla-logo-svg {
-  opacity: 0.85;
+.brand-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--text-primary);
 }
 
 .brand-divider {
-  color: var(--tesla-dark-gray);
+  color: var(--text-light);
   font-weight: 300;
-  font-size: 1.1rem;
 }
 
 .brand-sub {
-  font-size: 0.75rem;
-  letter-spacing: 3px;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
   font-weight: 700;
-  color: var(--tesla-light-gray);
+  color: var(--accent-red);
 }
 
-/* 내비게이션 중앙 */
 .nav-center-menu {
   display: flex;
   align-items: center;
 }
 
 .nav-item-active {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: var(--tesla-gray);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 5px 14px;
-  border-radius: var(--tesla-radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--card-border);
 }
 
-/* 내비게이션 우측 액션 */
 .nav-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* 테슬라 고스트 버튼 */
-.tesla-btn-ghost,
-.tesla-btn-outline {
+/* 내비 버튼 */
+.modern-btn-ghost,
+.modern-btn-primary-sm {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--tesla-border);
-  color: var(--tesla-offwhite);
-  padding: 7px 14px;
-  border-radius: var(--tesla-radius-sm);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
   font-size: 0.76rem;
   font-weight: 600;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
-.tesla-btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: var(--tesla-border-hover);
-  color: var(--tesla-white);
+.modern-btn-ghost:hover {
+  background: var(--bg-secondary);
+  border-color: var(--card-border-hover);
   transform: translateY(-1px);
 }
 
-.tesla-btn-outline {
-  background: #ffffff;
-  color: #0b0c10;
-  border: 1px solid #ffffff;
+.modern-btn-primary-sm {
+  background: var(--btn-dark);
+  color: #ffffff;
+  border: 1px solid var(--btn-dark);
   font-weight: 700;
 }
 
-.tesla-btn-outline:hover {
-  background: #e2e8f0;
-  color: #000000;
+.modern-btn-primary-sm:hover {
+  background: var(--btn-dark-hover);
   transform: translateY(-1px);
 }
 
-/* 3. 메인 레이아웃 */
+/* ==========================================================================
+   4. 메인 콘텐트 래퍼 및 히어로 섹션
+   ========================================================================== */
 .app-container {
-  max-width: 1380px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 32px 28px 60px;
+  padding: 32px 24px 60px;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 40px;
   position: relative;
   z-index: 1;
 }
 
-/* 4. 테슬라 스타일 히어로 섹션 */
-.tesla-hero {
-  position: relative;
-  border-radius: var(--tesla-radius-md);
-  background: linear-gradient(180deg, rgba(20, 22, 28, 0.8) 0%, rgba(10, 11, 14, 0.95) 100%);
-  border: 1px solid var(--tesla-border);
-  padding: 56px 40px;
+/* 밝고 청명한 화이트 히어로 카드 */
+.modern-hero {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--card-border);
+  padding: 52px 36px;
   text-align: center;
-  overflow: hidden;
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.hero-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 32px 32px;
-  background-position: 0 0, 16px 16px;
-  opacity: 0.6;
-  pointer-events: none;
+  box-shadow: var(--card-shadow);
 }
 
 .hero-content {
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  max-width: 900px;
+  gap: 14px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
@@ -248,23 +569,23 @@ body.tesla-theme::before {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 5px 14px;
-  border-radius: var(--tesla-radius-pill);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--card-border);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 2px;
-  color: var(--tesla-light-gray);
+  color: var(--text-muted);
 }
 
 .status-indicator-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--tesla-red);
-  box-shadow: 0 0 10px var(--tesla-red);
-  animation: pulseDot 2s infinite;
+  background: var(--accent-red);
+  box-shadow: 0 0 8px var(--accent-red);
+  animation: pulseDot 1.8s infinite;
 }
 
 @keyframes pulseDot {
@@ -276,161 +597,159 @@ body.tesla-theme::before {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin: 4px 0 8px;
+  margin: 2px 0 6px;
 }
 
 .hero-title-main {
-  font-size: 3.2rem;
+  font-size: 3rem;
   font-weight: 800;
   letter-spacing: -1px;
-  color: var(--tesla-white);
+  color: var(--text-primary);
   line-height: 1.1;
 }
 
 .hero-title-sub {
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: 5px;
-  color: var(--tesla-gray);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
 .hero-description {
   font-size: 1.05rem;
-  color: var(--tesla-light-gray);
+  color: var(--text-secondary);
   font-weight: 400;
-  max-width: 600px;
+  max-width: 580px;
 }
 
-/* 테슬라 스펙 HUD 바 (Range / Top Speed 스타일) */
-.tesla-specs-bar {
+/* HUD 스펙 바 (깨끗한 화이트 배경) */
+.modern-specs-bar {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 36px;
-  padding: 24px 32px;
-  margin: 16px 0 20px;
-  background: rgba(14, 16, 22, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--tesla-radius-md);
-  backdrop-filter: blur(10px);
+  padding: 22px 32px;
+  margin: 12px 0 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 740px;
 }
 
 .spec-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 100px;
+  min-width: 90px;
 }
 
 .spec-value {
-  font-size: 2.1rem;
+  font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.5px;
-  color: var(--tesla-white);
+  color: var(--text-primary);
   line-height: 1.1;
 }
 
 .spec-value.spec-highlight {
-  color: var(--tesla-red);
+  color: var(--accent-red);
 }
 
 .spec-unit {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 1.8px;
-  color: var(--tesla-light-gray);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
 .spec-sub {
   font-size: 0.72rem;
-  color: var(--tesla-gray);
+  color: var(--text-light);
   margin-top: 2px;
 }
 
 .spec-divider {
   width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.1);
+  height: 38px;
+  background: var(--card-border);
 }
 
-/* 테슬라 시그니처 듀얼 CTA 버튼 */
-.tesla-cta-group {
+/* 듀얼 CTA 액션 버튼 */
+.modern-cta-group {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   margin-top: 6px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-/* 메인 액션 버튼 (Tesla Order Now 스타일) */
-.tesla-btn-primary {
-  background: var(--tesla-white);
-  color: #0b0c10;
+.modern-btn-primary {
+  background: var(--btn-dark);
+  color: #ffffff;
   border: none;
-  border-radius: var(--tesla-radius-sm);
-  padding: 15px 36px;
+  border-radius: var(--radius-sm);
+  padding: 16px 36px;
   font-size: 0.88rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   transition: var(--transition-smooth);
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.15);
 }
 
-.tesla-btn-primary:hover {
-  background: #f1f1f1;
+.modern-btn-primary:hover {
+  background: var(--btn-dark-hover);
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.25);
 }
 
-.tesla-btn-primary:active {
+.modern-btn-primary:active {
   transform: translateY(0);
 }
 
 .btn-label-icon {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
 }
 
-/* 세컨더리 버튼 (Tesla Custom Order 스타일) */
-.tesla-btn-secondary {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: var(--tesla-white);
-  border-radius: var(--tesla-radius-sm);
-  padding: 15px 28px;
+.modern-btn-secondary {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 16px 28px;
   font-size: 0.88rem;
   font-weight: 600;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   cursor: pointer;
   transition: var(--transition-smooth);
-  backdrop-filter: blur(10px);
 }
 
-.tesla-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.3);
+.modern-btn-secondary:hover {
+  background: var(--bg-secondary);
+  border-color: var(--card-border-hover);
   transform: translateY(-2px);
 }
 
 .hero-footnote {
   font-size: 0.78rem;
-  color: var(--tesla-gray);
-  margin-top: 8px;
+  color: var(--text-muted);
+  margin-top: 6px;
 }
 
-/* 5. 카드 그리드 섹션 */
+/* ==========================================================================
+   5. 카드 그리드 섹션 (화이트 & 프리미엄 메탈릭 라인)
+   ========================================================================== */
 .grid-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .section-header-bar {
@@ -452,48 +771,47 @@ body.tesla-theme::before {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 2px;
-  color: var(--tesla-red);
+  color: var(--accent-red);
 }
 
 .section-title {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 1.55rem;
+  font-weight: 800;
   letter-spacing: -0.5px;
-  color: var(--tesla-white);
+  color: var(--text-primary);
 }
 
 .meta-chip {
   font-size: 0.82rem;
-  color: var(--tesla-light-gray);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
   padding: 6px 14px;
-  border-radius: var(--tesla-radius-sm);
+  border-radius: var(--radius-sm);
 }
 
-/* 12칸 그리드 레이아웃 */
+/* 12칸 그리드 */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
   gap: 20px;
 }
 
-/* 개별 테슬라 글래스 카드 */
+/* 개별 화이트 카드 */
 .role-card {
-  background: var(--tesla-card-bg);
-  border: 1px solid var(--tesla-border);
-  border-radius: var(--tesla-radius-md);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
   padding: 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 16px;
   transition: var(--transition-smooth);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  position: relative;
+  box-shadow: var(--card-shadow);
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
 }
 
 .role-card::after {
@@ -502,44 +820,30 @@ body.tesla-theme::before {
   top: 0;
   left: 0;
   width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--card-border-hover), transparent);
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.25s;
 }
 
 .role-card:hover {
-  background: var(--tesla-card-hover);
-  border-color: var(--tesla-border-hover);
+  border-color: var(--card-border-hover);
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .role-card:hover::after {
   opacity: 1;
 }
 
-/* 셔플 중 흔들림 애니메이션 */
-.role-card.shuffling {
-  animation: teslaShuffle 0.12s infinite;
-  border-color: var(--tesla-red);
-}
-
-@keyframes teslaShuffle {
-  0% { transform: translateY(1px); }
-  50% { transform: translateY(-1px); }
-  100% { transform: translateY(0); }
-}
-
-/* 팝인 등장 애니메이션 */
 .role-card.pop-in {
-  animation: teslaCardIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: cardFadePop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes teslaCardIn {
+@keyframes cardFadePop {
   0% {
     opacity: 0;
-    transform: translateY(16px) scale(0.97);
+    transform: translateY(14px) scale(0.97);
   }
   100% {
     opacity: 1;
@@ -547,12 +851,12 @@ body.tesla-theme::before {
   }
 }
 
-/* 카드 상단: 번호 및 학생 정보 */
+/* 카드 상단 */
 .card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--bg-tertiary);
   padding-bottom: 12px;
 }
 
@@ -565,9 +869,9 @@ body.tesla-theme::before {
 .student-avatar {
   width: 34px;
   height: 34px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--tesla-radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -577,7 +881,7 @@ body.tesla-theme::before {
 .student-name {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--tesla-white);
+  color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
@@ -585,14 +889,14 @@ body.tesla-theme::before {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--tesla-gray);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
   padding: 3px 8px;
-  border-radius: var(--tesla-radius-sm);
+  border-radius: var(--radius-sm);
 }
 
-/* 카드 본문: 역할 정보 */
+/* 카드 본문 */
 .card-body {
   display: flex;
   flex-direction: column;
@@ -606,70 +910,72 @@ body.tesla-theme::before {
 }
 
 .role-icon {
-  font-size: 1.6rem;
+  font-size: 1.55rem;
   min-width: 42px;
   height: 42px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--tesla-radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .role-title {
-  font-size: 1.15rem;
+  font-size: 1.12rem;
   font-weight: 700;
-  color: var(--tesla-white);
+  color: var(--text-primary);
   letter-spacing: -0.2px;
 }
 
 .role-desc {
   font-size: 0.85rem;
-  color: var(--tesla-light-gray);
+  color: var(--text-secondary);
   line-height: 1.5;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--bg-secondary);
   padding: 10px 12px;
-  border-radius: var(--tesla-radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
 }
 
-/* 카드 하단 액션 */
+/* 카드 하단 */
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--bg-tertiary);
 }
 
 .role-status-badge {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 1.5px;
-  color: #22c55e;
+  color: #16a34a;
 }
 
 .btn-card-swap {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--tesla-radius-sm);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
   padding: 4px 10px;
   font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.5px;
-  color: var(--tesla-light-gray);
+  color: var(--text-muted);
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
 .btn-card-swap:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--tesla-white);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--card-border-hover);
 }
 
-/* 6. A4 교실 게시판 인쇄 서식 (@media print) */
+/* ==========================================================================
+   6. A4 교실 게시판 인쇄 서식 (@media print)
+   ========================================================================== */
 .print-area {
   display: none;
 }
@@ -679,11 +985,12 @@ body.tesla-theme::before {
   .modal-overlay,
   .toast-container,
   #confettiCanvas,
-  .tesla-navbar {
+  .modern-navbar,
+  .reveal-overlay {
     display: none !important;
   }
 
-  body.tesla-theme {
+  body.modern-white-theme {
     background: #ffffff !important;
     color: #111111 !important;
     font-size: 10.5pt;
@@ -691,7 +998,7 @@ body.tesla-theme::before {
     padding: 0;
   }
 
-  body.tesla-theme::before {
+  body.modern-white-theme::before {
     display: none !important;
   }
 
@@ -705,7 +1012,6 @@ body.tesla-theme::before {
     display: none !important;
   }
 
-  /* 인쇄 전용 영역 표시 */
   .print-area {
     display: block !important;
     width: 100% !important;
@@ -765,13 +1071,12 @@ body.tesla-theme::before {
     justify-content: space-between;
     font-size: 9pt;
     color: #222222;
-    background: #f4f4f4;
+    background: #f8fafc;
     padding: 5px 12px;
     border-radius: 4px;
     border: 1px solid #e2e8f0;
   }
 
-  /* 인쇄 표 디자인 */
   .print-table-container {
     margin: 10px 0;
     flex-grow: 1;
@@ -784,7 +1089,7 @@ body.tesla-theme::before {
   }
 
   .print-role-table th {
-    background: #f1f3f5 !important;
+    background: #f1f5f9 !important;
     color: #000000;
     border: 1.5px solid #222222;
     padding: 8px 6px;
@@ -814,7 +1119,6 @@ body.tesla-theme::before {
     font-weight: 600;
   }
 
-  /* 인쇄 푸터 서약서 및 서명란 */
   .print-footer {
     margin-top: 10px;
     border-top: 1px solid #444444;
@@ -845,16 +1149,18 @@ body.tesla-theme::before {
   }
 }
 
-/* 7. 테슬라 스타일 모달 창 (Configurator Panel) */
+/* ==========================================================================
+   7. 모달 창 (화이트 & 클린 패널)
+   ========================================================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -863,24 +1169,24 @@ body.tesla-theme::before {
 }
 
 .modal-card {
-  background: var(--tesla-panel-bg);
-  border: 1px solid var(--tesla-border);
-  border-radius: var(--tesla-radius-md);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
   overflow: hidden;
-  animation: teslaModalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-large {
   max-width: 820px;
 }
 
-@keyframes teslaModalIn {
+@keyframes modalFadeIn {
   0% { opacity: 0; transform: scale(0.97) translateY(12px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
@@ -889,9 +1195,9 @@ body.tesla-theme::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 28px;
-  border-bottom: 1px solid var(--tesla-border);
-  background: rgba(255, 255, 255, 0.02);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--card-border);
+  background: var(--bg-secondary);
 }
 
 .modal-title-wrap {
@@ -904,13 +1210,13 @@ body.tesla-theme::before {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 2px;
-  color: var(--tesla-red);
+  color: var(--accent-red);
 }
 
 .modal-title-wrap h3 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--tesla-white);
+  color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
@@ -919,38 +1225,38 @@ body.tesla-theme::before {
   border: none;
   font-size: 1.6rem;
   line-height: 1;
-  color: var(--tesla-gray);
+  color: var(--text-muted);
   cursor: pointer;
-  border-radius: var(--tesla-radius-sm);
+  border-radius: var(--radius-sm);
   padding: 4px 8px;
   transition: var(--transition-smooth);
 }
 
 .btn-close-modal:hover {
-  color: var(--tesla-white);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 .modal-body {
-  padding: 24px 28px;
+  padding: 24px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .modal-desc {
   font-size: 0.92rem;
-  color: var(--tesla-light-gray);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
-/* 원클릭 시트 복사 박스 */
+/* 원클릭 시트 복사 */
 .quick-sheet-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--tesla-border);
-  border-radius: var(--tesla-radius-sm);
-  padding: 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -960,23 +1266,23 @@ body.tesla-theme::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--tesla-white);
+  color: var(--text-primary);
   font-size: 0.92rem;
 }
 
 .badge-mini {
-  background: var(--tesla-red);
-  color: var(--tesla-white);
+  background: var(--btn-dark);
+  color: #ffffff;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 1.5px;
   padding: 2px 8px;
-  border-radius: var(--tesla-radius-pill);
+  border-radius: var(--radius-pill);
 }
 
 .quick-box-desc {
   font-size: 0.82rem;
-  color: var(--tesla-gray);
+  color: var(--text-muted);
 }
 
 .quick-actions {
@@ -986,40 +1292,39 @@ body.tesla-theme::before {
   margin-top: 4px;
 }
 
-.tesla-btn-small {
-  background: var(--tesla-white);
-  color: #0b0c10;
+.modern-btn-small {
+  background: var(--btn-dark);
+  color: #ffffff;
   border: none;
   padding: 8px 16px;
-  border-radius: var(--tesla-radius-sm);
+  border-radius: var(--radius-sm);
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
-.tesla-btn-small:hover {
-  background: #f1f1f1;
+.modern-btn-small:hover {
+  background: var(--btn-dark-hover);
 }
 
-.tesla-btn-small-ghost {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--tesla-border);
-  color: var(--tesla-offwhite);
+.modern-btn-small-ghost {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
   padding: 8px 16px;
-  border-radius: var(--tesla-radius-sm);
+  border-radius: var(--radius-sm);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
-.tesla-btn-small-ghost:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--tesla-white);
+.modern-btn-small-ghost:hover {
+  background: var(--bg-secondary);
 }
 
-/* Apps Script URL 입력부 */
+/* Apps Script URL 입력 */
 .script-setting-box {
   display: flex;
   flex-direction: column;
@@ -1030,7 +1335,7 @@ body.tesla-theme::before {
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--tesla-light-gray);
+  color: var(--text-muted);
 }
 
 .input-with-button {
@@ -1041,46 +1346,46 @@ body.tesla-theme::before {
 .modal-input {
   flex: 1;
   padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--tesla-border);
-  border-radius: var(--tesla-radius-sm);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
-  color: var(--tesla-white);
+  color: var(--text-primary);
   outline: none;
   transition: var(--transition-smooth);
 }
 
 .modal-input:focus {
-  border-color: var(--tesla-white);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
 }
 
-.tesla-btn-inline {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--tesla-border);
-  color: var(--tesla-white);
+.modern-btn-inline {
+  background: var(--btn-dark);
+  border: none;
+  color: #ffffff;
   padding: 0 16px;
   font-size: 0.82rem;
   font-weight: 700;
-  border-radius: var(--tesla-radius-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
-.tesla-btn-inline:hover {
-  background: rgba(255, 255, 255, 0.2);
+.modern-btn-inline:hover {
+  background: var(--btn-dark-hover);
 }
 
 .helper-text {
   font-size: 0.78rem;
-  color: var(--tesla-gray);
+  color: var(--text-light);
 }
 
 /* 코드 가이드 */
 .code-guide-details {
-  border: 1px solid var(--tesla-border);
-  border-radius: var(--tesla-radius-sm);
-  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
   overflow: hidden;
 }
 
@@ -1088,13 +1393,13 @@ body.tesla-theme::before {
   padding: 10px 16px;
   font-weight: 600;
   font-size: 0.84rem;
-  color: var(--tesla-light-gray);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .code-box-wrap {
   position: relative;
-  background: #000000;
+  background: #0f172a;
   padding: 14px;
 }
 
@@ -1102,7 +1407,7 @@ body.tesla-theme::before {
   margin: 0;
   overflow-x: auto;
   font-size: 0.76rem;
-  color: #a6accd;
+  color: #cbd5e1;
   line-height: 1.45;
   font-family: 'Consolas', 'Courier New', monospace;
   max-height: 200px;
@@ -1113,16 +1418,16 @@ body.tesla-theme::before {
   top: 10px;
   right: 10px;
   background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--tesla-white);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
   padding: 4px 10px;
-  border-radius: var(--tesla-radius-sm);
+  border-radius: var(--radius-sm);
   font-size: 0.74rem;
   cursor: pointer;
 }
 
 .btn-copy-code:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* 명단 편집 2열 레이아웃 */
@@ -1154,13 +1459,13 @@ body.tesla-theme::before {
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--tesla-white);
+  color: var(--text-primary);
 }
 
 .btn-text-action {
   background: transparent;
   border: none;
-  color: var(--tesla-red);
+  color: var(--accent-red);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -1172,15 +1477,15 @@ body.tesla-theme::before {
 
 .edit-hint {
   font-size: 0.76rem;
-  color: var(--tesla-gray);
+  color: var(--text-light);
 }
 
 .edit-textarea {
   width: 100%;
-  border: 1px solid var(--tesla-border);
-  border-radius: var(--tesla-radius-sm);
-  background: rgba(0, 0, 0, 0.5);
-  color: var(--tesla-white);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--text-primary);
   padding: 10px;
   font-family: inherit;
   font-size: 0.86rem;
@@ -1190,42 +1495,40 @@ body.tesla-theme::before {
 }
 
 .edit-textarea:focus {
-  border-color: var(--tesla-white);
+  border-color: var(--text-primary);
 }
 
 .class-config-box {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-secondary);
   padding: 14px;
-  border-radius: var(--tesla-radius-sm);
-  border: 1px solid var(--tesla-border);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
 }
 
 .class-config-box label {
   font-size: 0.76rem;
   letter-spacing: 1px;
-  color: var(--tesla-light-gray);
+  color: var(--text-muted);
 }
 
-/* 스왑 셀렉터 */
 .modal-select {
   width: 100%;
   padding: 10px 14px;
-  background: #000000;
-  border: 1px solid var(--tesla-border);
-  color: var(--tesla-white);
-  border-radius: var(--tesla-radius-sm);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
   font-size: 0.92rem;
   outline: none;
 }
 
-/* 모달 푸터 */
 .modal-footer {
-  padding: 16px 28px;
-  border-top: 1px solid var(--tesla-border);
-  background: rgba(255, 255, 255, 0.02);
+  padding: 16px 24px;
+  border-top: 1px solid var(--card-border);
+  background: var(--bg-secondary);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -1241,7 +1544,9 @@ body.tesla-theme::before {
   font-size: 0.84rem;
 }
 
-/* 8. 토스트 알림 */
+/* ==========================================================================
+   8. 토스트 알림
+   ========================================================================== */
 .toast-container {
   position: fixed;
   bottom: 28px;
@@ -1249,49 +1554,50 @@ body.tesla-theme::before {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  z-index: 11000;
+  z-index: 13000;
   pointer-events: none;
 }
 
 .toast {
-  background: rgba(20, 22, 28, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--tesla-border);
-  color: var(--tesla-white);
-  padding: 12px 22px;
-  border-radius: var(--tesla-radius-sm);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 0.88rem;
   font-weight: 600;
-  animation: teslaToastIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: toastIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
 }
 
 .toast.toast-success {
-  border-left: 3px solid var(--tesla-white);
+  border-left: 4px solid var(--text-primary);
 }
 
 .toast.toast-info {
-  border-left: 3px solid var(--tesla-red);
+  border-left: 4px solid var(--accent-red);
 }
 
-@keyframes teslaToastIn {
+@keyframes toastIn {
   0% { opacity: 0; transform: translateY(12px) scale(0.96); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* 9. 테슬라 스타일 모던 푸터 */
-.tesla-footer {
+/* ==========================================================================
+   9. 모던 화이트 푸터
+   ========================================================================== */
+.modern-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 40px 10px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--tesla-gray);
+  border-top: 1px solid var(--card-border);
+  color: var(--text-muted);
   font-size: 0.78rem;
 }
 
@@ -1304,7 +1610,7 @@ body.tesla-theme::before {
 .footer-logo {
   font-weight: 800;
   letter-spacing: 2.5px;
-  color: var(--tesla-light-gray);
+  color: var(--text-primary);
 }
 
 .footer-copy {
@@ -1316,15 +1622,15 @@ body.tesla-theme::before {
   gap: 18px;
   flex-wrap: wrap;
   justify-content: center;
-  color: var(--tesla-gray);
+  color: var(--text-muted);
 }
 
 .footer-links span:hover {
-  color: var(--tesla-white);
+  color: var(--text-primary);
   cursor: pointer;
 }
 
-/* 10. 반응형 모바일 최적화 */
+/* 10. 반응형 */
 @media (max-width: 900px) {
   .nav-container {
     padding: 12px 18px;
@@ -1332,7 +1638,7 @@ body.tesla-theme::before {
   .nav-center-menu {
     display: none;
   }
-  .tesla-specs-bar {
+  .modern-specs-bar {
     gap: 16px;
     padding: 16px;
     flex-wrap: wrap;
@@ -1341,13 +1647,18 @@ body.tesla-theme::before {
     display: none;
   }
   .hero-title-main {
-    font-size: 2.4rem;
-  }
-  .hero-title-sub {
-    font-size: 0.85rem;
-    letter-spacing: 3px;
+    font-size: 2.3rem;
   }
   .cards-grid {
     grid-template-columns: 1fr;
+  }
+  .reveal-spotlight-card {
+    padding: 24px 20px;
+  }
+  .spotlight-name {
+    font-size: 1.8rem;
+  }
+  .spotlight-role-title {
+    font-size: 1.4rem;
   }
 }

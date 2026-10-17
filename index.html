@@ -3,56 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TESLA CLASSROOM | 1인 1역할 자율 배정 시스템</title>
-  <meta name="description" content="테슬라 미니멀 감성의 프리미엄 학급 1인 1역할 무작위 배정 웹 애플리케이션. A4 인쇄 및 구글 스프레드시트 연동 지원." />
+  <title>CLASSROOM OS | 1인 1역할 자율 배정 시스템</title>
+  <meta name="description" content="모던 미니멀 감성의 프리미엄 학급 1인 1역할 무작위 배정 웹 애플리케이션. A4 인쇄 및 구글 스프레드시트 연동 지원." />
   
-  <!-- 웹폰트: 테슬라 특유의 정갈하고 모던한 산세리프 Inter & Noto Sans KR -->
+  <!-- 웹폰트: 모던하고 정갈한 산세리프 Inter & Noto Sans KR -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="tesla-theme">
+<body class="modern-white-theme">
   <!-- 축하 캔버스 (세련된 스파크 및 콘페티 파티클) -->
   <canvas id="confettiCanvas"></canvas>
 
-  <!-- 테슬라 스타일 글로벌 플로팅 내비게이션 바 -->
-  <nav class="tesla-navbar no-print">
+  <!-- 순차 공개(1초에 1명씩) 전체화면 블러 오버레이 -->
+  <div id="revealOverlay" class="reveal-overlay" style="display: none;">
+    <div class="reveal-backdrop"></div>
+    <div class="reveal-container">
+      
+      <!-- 오버레이 상단 바 -->
+      <div class="reveal-topbar">
+        <div class="reveal-status-box">
+          <span class="reveal-pulse-indicator"></span>
+          <span class="reveal-status-title">AUTONOMOUS ASSIGNMENT IN PROGRESS</span>
+          <span class="reveal-counter" id="revealCounter">1 / 12</span>
+        </div>
+        <div class="reveal-actions">
+          <button id="btnFastForward" class="btn-fast-forward" title="모든 역할을 한 번에 즉시 일괄 공개합니다">
+            ⏩ 즉시 일괄 공개 (FAST REVEAL)
+          </button>
+        </div>
+      </div>
+
+      <!-- 진행률 바 -->
+      <div class="reveal-progress-track">
+        <div class="reveal-progress-fill" id="revealProgressFill" style="width: 8%;"></div>
+      </div>
+
+      <!-- 1명씩 중앙에 드라마틱하게 나타나는 스포트라이트 카드 -->
+      <div class="reveal-spotlight-area">
+        <div class="reveal-spotlight-card" id="revealSpotlightCard">
+          <div class="spotlight-badge-row">
+            <span class="spotlight-tag" id="spotlightOrderTag">NO. 01</span>
+            <span class="spotlight-live-pill">ASSIGNING...</span>
+          </div>
+          
+          <div class="spotlight-student-box">
+            <span class="spotlight-avatar" id="spotlightAvatar">⚡</span>
+            <div class="spotlight-student-text">
+              <span class="spotlight-label">STUDENT</span>
+              <h2 class="spotlight-name" id="spotlightStudentName">김민준</h2>
+            </div>
+          </div>
+
+          <div class="spotlight-divider"></div>
+
+          <div class="spotlight-role-box">
+            <span class="spotlight-role-icon" id="spotlightRoleIcon">🧹</span>
+            <div class="spotlight-role-text">
+              <span class="spotlight-role-sub">ASSIGNED ROLE</span>
+              <h3 class="spotlight-role-title" id="spotlightRoleName">칠판 도우미</h3>
+            </div>
+          </div>
+
+          <p class="spotlight-desc" id="spotlightRoleDesc">
+            수업 후 칠판을 정밀하게 청결히 하고 분필 및 지우개를 정리합니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- 하단에 착착 누적되는 미니 칩 스트립 -->
+      <div class="reveal-history-wrapper">
+        <span class="history-label">DEPLOYED FLEET:</span>
+        <div class="reveal-history-strip" id="revealHistoryStrip">
+          <!-- 1명씩 공개될 때마다 칩이 누적됨 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 글로벌 플로팅 내비게이션 바 -->
+  <nav class="modern-navbar no-print">
     <div class="nav-container">
-      <!-- 테슬라 스타일 로고마크 -->
-      <div class="tesla-brand">
-        <svg class="tesla-logo-svg" viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0 .1a9.7 9.7 0 0 0 7 7h11l.1 27.8h6.7V7.1H36a9.7 9.7 0 0 0 7-7H0zm64 0l-8.6 34.8h6.8l2-8.3h14.8l2 8.3h6.8L79.3.1H64zm7.2 20.3l5.4-22 5.5 22h-10.9zm41.6-13.6h17.9a9.7 9.7 0 0 0 7-6.7h-31.7a9.7 9.7 0 0 0 6.8 6.7zm-6.8 2.7l3 12.3c.7 2.9 3.2 4.9 6.2 4.9h12.5a6.4 6.4 0 0 0 6.3-5.2l2.9-12H106zm88.4-9.4h-24.8a9.7 9.7 0 0 0 6.8 6.7h11.2l.1 27.8h6.7V7.1h6.8a9.7 9.7 0 0 0 6.8-6.7h-13.6zm49 0l-8.6 34.8h6.8l2-8.3h14.8l2 8.3h6.8l-8.6-34.8h-15.2zm7.2 20.3l5.4-22 5.5 22h-10.9zm-97.5 7.4h-18l-.1-27.4h-6.7V35h24.8V27.4z" fill="currentColor"/>
+      <!-- 모던 미니멀 로고마크 -->
+      <div class="modern-brand">
+        <svg class="modern-logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
         </svg>
+        <span class="brand-title">CLASSROOM</span>
         <span class="brand-divider">/</span>
-        <span class="brand-sub">CLASSROOM</span>
+        <span class="brand-sub">OS</span>
       </div>
 
       <!-- 중앙 퀵 상태 텍스트 -->
       <div class="nav-center-menu">
-        <span class="nav-item-active" id="navGradeTitle">2026 AUTONOMOUS CLASSROOM</span>
+        <span class="nav-item-active" id="navGradeTitle">3학년 2반 AUTONOMOUS FLEET</span>
       </div>
 
       <!-- 우측 액션 툴바 -->
       <div class="nav-actions">
-        <button id="btnSoundToggle" class="tesla-btn-ghost" title="음향 효과 켜기/끄기">
+        <button id="btnSoundToggle" class="modern-btn-ghost" title="음향 효과 켜기/끄기">
           <span class="btn-icon">🔊</span>
           <span class="btn-text">SOUND ON</span>
         </button>
-        <button id="btnManage" class="tesla-btn-ghost" title="학생 및 역할 목록 수정">
+        <button id="btnManage" class="modern-btn-ghost" title="학생 및 역할 목록 수정">
           <span class="btn-icon">⚙️</span>
           <span class="btn-text">CONFIG</span>
         </button>
-        <button id="btnLoadSheet" class="tesla-btn-ghost" title="스프레드시트에서 동기화">
+        <button id="btnLoadSheet" class="modern-btn-ghost" title="스프레드시트에서 동기화">
           <span class="btn-icon">🔄</span>
           <span class="btn-text">SHEET LOAD</span>
         </button>
-        <button id="btnSaveSheet" class="tesla-btn-ghost" title="스프레드시트에 결과 전송">
+        <button id="btnSaveSheet" class="modern-btn-ghost" title="스프레드시트에 결과 전송">
           <span class="btn-icon">💾</span>
           <span class="btn-text">SHEET SAVE</span>
         </button>
-        <button id="btnPrint" class="tesla-btn-outline" title="A4 게시판 부착용 출력">
+        <button id="btnPrint" class="modern-btn-primary-sm" title="A4 게시판 부착용 출력">
           <span class="btn-icon">🖨️</span>
           <span class="btn-text">A4 PRINT</span>
         </button>
@@ -60,13 +129,11 @@
     </div>
   </nav>
 
-  <!-- 메인 콘텐트 컨테이너 -->
-  <div class="app-container">
+  <!-- 메인 콘텐트 래퍼 -->
+  <div class="app-container" id="mainAppContent">
 
-    <!-- 테슬라 스타일 히어로 섹션 -->
-    <header class="tesla-hero no-print">
-      <div class="hero-backdrop"></div>
-      
+    <!-- 모던 화이트 히어로 섹션 -->
+    <header class="modern-hero no-print">
       <div class="hero-content">
         <div class="hero-badge-tag">
           <span class="status-indicator-dot"></span>
@@ -79,11 +146,11 @@
         </h1>
 
         <p class="hero-description">
-          공정하고 투명한 알고리즘 기반 학급 1인 1역할 배정 시스템
+          공정하고 투명한 알고리즘 기반 학급 1인 1역할 무작위 자율 배정 시스템
         </p>
 
-        <!-- 테슬라 차량 제원 스타일 스펙 바 (Specs HUD) -->
-        <div class="tesla-specs-bar">
+        <!-- 제원 스타일 HUD 스펙 바 (밝고 깨끗한 화이트 & 실버) -->
+        <div class="modern-specs-bar">
           <div class="spec-item">
             <span class="spec-value" id="studentCountBadge">12</span>
             <span class="spec-unit">STUDENTS</span>
@@ -109,20 +176,19 @@
           </div>
         </div>
 
-        <!-- 테슬라 시그니처 듀얼 CTA 액션 버튼 -->
-        <div class="tesla-cta-group">
-          <button id="btnAssign" class="tesla-btn-primary">
-            <span class="btn-pulse-ring"></span>
+        <!-- 듀얼 CTA 액션 버튼 -->
+        <div class="modern-cta-group">
+          <button id="btnAssign" class="modern-btn-primary">
             <span class="btn-label-icon">🎲</span>
-            <span class="btn-label-text">역할 배정하기 (ORDER ASSIGNMENT)</span>
+            <span class="btn-label-text">역할 배정하기 (DEPLOY ASSIGNMENT)</span>
           </button>
-          <button id="btnReset" class="tesla-btn-secondary">
+          <button id="btnReset" class="modern-btn-secondary">
             <span>↺ 초기화 (RESET)</span>
           </button>
         </div>
         
         <div class="hero-footnote">
-          <span>스페이스바(Space)를 눌러 즉시 무작위 배정을 실행할 수 있습니다.</span>
+          <span>배정 시작 시 화면이 블러 처리되며 1초에 1명씩 극적으로 공개됩니다. (스페이스바로 실행 가능)</span>
         </div>
       </div>
     </header>
@@ -139,16 +205,16 @@
         </div>
       </div>
 
-      <!-- 카드 그리드 (테슬라 다크 글래스모피즘 & 메탈릭 보더) -->
+      <!-- 카드 그리드 (산뜻한 화이트 & 프리미엄 메탈릭 라인) -->
       <div id="cardsGrid" class="cards-grid">
-        <!-- 자바스크립트로 12장의 테슬라 스타일 카드 자동 생성 -->
+        <!-- 자바스크립트로 12장의 카드 자동 생성 -->
       </div>
     </main>
 
     <!-- 교실 게시판 부착용 A4 인쇄 전용 영역 (인쇄 시 자동 활성화) -->
     <section id="printArea" class="print-area">
       <div class="print-page">
-        <!-- 인쇄 헤더: 깔끔하고 정돈된 미니멀 타이포그래피 -->
+        <!-- 인쇄 헤더 -->
         <div class="print-header">
           <div class="print-meta-top">
             <span class="print-school-year" id="printYearText">2026학년도 학급 자치 조직</span>
@@ -199,23 +265,23 @@
       </div>
     </section>
 
-    <!-- 테슬라 스타일 모던 푸터 -->
-    <footer class="tesla-footer no-print">
+    <!-- 모던 화이트 푸터 -->
+    <footer class="modern-footer no-print">
       <div class="footer-brand-line">
-        <span class="footer-logo">TESLA CLASSROOM</span>
+        <span class="footer-logo">CLASSROOM OS</span>
         <span class="footer-copy">© 2026 AUTONOMOUS EDUCATION SYSTEM</span>
       </div>
       <div class="footer-links">
-        <span>Privacy & Legal</span>
-        <span>Fleet Assignment</span>
-        <span>A4 Classroom Board</span>
-        <span>Google Apps Script Sync</span>
-        <span>GitHub Pages Hosted</span>
+        <span>개인정보 및 보안</span>
+        <span>학급 역할 조직도</span>
+        <span>A4 교실 게시판 인쇄</span>
+        <span>Google Apps Script 연동</span>
+        <span>GitHub Pages 배포 호환</span>
       </div>
     </footer>
   </div>
 
-  <!-- [모달 1] 구글 스프레드시트 연동 모달 (테슬라 컨피규레이터 다크 패널) -->
+  <!-- [모달 1] 구글 스프레드시트 연동 모달 -->
   <div id="sheetModal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
@@ -228,7 +294,7 @@
 
       <div class="modal-body">
         <p class="modal-desc">
-          구글 스프레드시트와 실시간 연동하여 학생 명단을 로드하고, 배정 결과를 데이터베이스에 즉시 동기화합니다.
+          구글 스프레드시트와 실시간 연동하여 학생 명단을 가져오고, 배정 결과를 시트에 즉시 저장할 수 있습니다.
         </p>
 
         <!-- 원클릭 클립보드 복사 -->
@@ -241,8 +307,8 @@
             구글 스프레드시트 임의의 셀을 클릭한 뒤 <code>Ctrl + V</code>를 누르면 바로 표로 입력됩니다.
           </p>
           <div class="quick-actions">
-            <button id="btnCopyTsv" class="tesla-btn-small">📋 표 데이터 클립보드 복사</button>
-            <button id="btnDownloadCsv" class="tesla-btn-small-ghost">📥 CSV 파일 내보내기</button>
+            <button id="btnCopyTsv" class="modern-btn-small">📋 표 데이터 클립보드 복사</button>
+            <button id="btnDownloadCsv" class="modern-btn-small-ghost">📥 CSV 파일 내보내기</button>
           </div>
         </div>
 
@@ -256,7 +322,7 @@
               placeholder="https://script.google.com/macros/s/.../exec" 
               class="modal-input"
             />
-            <button id="btnSaveScriptUrl" class="tesla-btn-inline">URL 저장</button>
+            <button id="btnSaveScriptUrl" class="modern-btn-inline">URL 저장</button>
           </div>
           <p class="helper-text">
             * 저장된 URL은 향후 상단 [SHEET LOAD] 및 [SHEET SAVE] 클릭 시 즉시 비동기 통신에 사용됩니다.
@@ -314,8 +380,8 @@ function doPost(e) {
       </div>
 
       <div class="modal-footer">
-        <button id="btnExecuteSheetSync" class="tesla-btn-primary modal-action-btn">지금 시트와 통신 실행</button>
-        <button class="tesla-btn-secondary modal-cancel-btn" id="btnCancelSheetModal">닫기</button>
+        <button id="btnExecuteSheetSync" class="modern-btn-primary modal-action-btn">지금 시트와 통신 실행</button>
+        <button class="modern-btn-secondary modal-cancel-btn" id="btnCancelSheetModal">닫기</button>
       </div>
     </div>
   </div>
@@ -359,13 +425,13 @@ function doPost(e) {
       </div>
 
       <div class="modal-footer">
-        <button id="btnSaveManageData" class="tesla-btn-primary modal-action-btn">설정 저장 및 즉시 반영</button>
-        <button class="tesla-btn-secondary modal-cancel-btn" id="btnCancelManageModal">취소</button>
+        <button id="btnSaveManageData" class="modern-btn-primary modal-action-btn">설정 저장 및 즉시 반영</button>
+        <button class="modern-btn-secondary modal-cancel-btn" id="btnCancelManageModal">취소</button>
       </div>
     </div>
   </div>
 
-  <!-- [모달 3] 카드 스왑 (자리 바꾸기) 모달 -->
+  <!-- [모달 3] 카드 스왑 모달 -->
   <div id="swapModal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
@@ -383,13 +449,13 @@ function doPost(e) {
         </div>
       </div>
       <div class="modal-footer">
-        <button id="btnConfirmSwap" class="tesla-btn-primary modal-action-btn">역할 맞바꾸기 실행</button>
-        <button class="tesla-btn-secondary modal-cancel-btn" id="btnCancelSwapModal">취소</button>
+        <button id="btnConfirmSwap" class="modern-btn-primary modal-action-btn">역할 맞바꾸기 실행</button>
+        <button class="modern-btn-secondary modal-cancel-btn" id="btnCancelSwapModal">취소</button>
       </div>
     </div>
   </div>
 
-  <!-- 테슬라 스타일 토스트 알림 컨테이너 -->
+  <!-- 토스트 알림 컨테이너 -->
   <div id="toastContainer" class="toast-container"></div>
 
   <!-- 핵심 동작 스크립트 연결 -->
