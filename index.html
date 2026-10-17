@@ -3,145 +3,167 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>우리 반 1인 1역할 배정 시스템 | 행복한 교실 만들기</title>
-  <meta name="description" content="초등학교 교실을 위한 귀엽고 산뜻한 파스텔톤 1인 1역할 랜덤 매칭 웹 애플리케이션. A4 인쇄 및 구글 스프레드시트 연동 지원." />
+  <title>TESLA CLASSROOM | 1인 1역할 자율 배정 시스템</title>
+  <meta name="description" content="테슬라 미니멀 감성의 프리미엄 학급 1인 1역할 무작위 배정 웹 애플리케이션. A4 인쇄 및 구글 스프레드시트 연동 지원." />
   
-  <!-- 웹폰트: 귀엽고 또렷한 폰트 (Noto Sans KR, Jua) -->
+  <!-- 웹폰트: 테슬라 특유의 정갈하고 모던한 산세리프 Inter & Noto Sans KR -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <!-- 축하 캔버스 (폭죽 콘페티) -->
+<body class="tesla-theme">
+  <!-- 축하 캔버스 (세련된 스파크 및 콘페티 파티클) -->
   <canvas id="confettiCanvas"></canvas>
 
-  <!-- 메인 래퍼 -->
+  <!-- 테슬라 스타일 글로벌 플로팅 내비게이션 바 -->
+  <nav class="tesla-navbar no-print">
+    <div class="nav-container">
+      <!-- 테슬라 스타일 로고마크 -->
+      <div class="tesla-brand">
+        <svg class="tesla-logo-svg" viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 .1a9.7 9.7 0 0 0 7 7h11l.1 27.8h6.7V7.1H36a9.7 9.7 0 0 0 7-7H0zm64 0l-8.6 34.8h6.8l2-8.3h14.8l2 8.3h6.8L79.3.1H64zm7.2 20.3l5.4-22 5.5 22h-10.9zm41.6-13.6h17.9a9.7 9.7 0 0 0 7-6.7h-31.7a9.7 9.7 0 0 0 6.8 6.7zm-6.8 2.7l3 12.3c.7 2.9 3.2 4.9 6.2 4.9h12.5a6.4 6.4 0 0 0 6.3-5.2l2.9-12H106zm88.4-9.4h-24.8a9.7 9.7 0 0 0 6.8 6.7h11.2l.1 27.8h6.7V7.1h6.8a9.7 9.7 0 0 0 6.8-6.7h-13.6zm49 0l-8.6 34.8h6.8l2-8.3h14.8l2 8.3h6.8l-8.6-34.8h-15.2zm7.2 20.3l5.4-22 5.5 22h-10.9zm-97.5 7.4h-18l-.1-27.4h-6.7V35h24.8V27.4z" fill="currentColor"/>
+        </svg>
+        <span class="brand-divider">/</span>
+        <span class="brand-sub">CLASSROOM</span>
+      </div>
+
+      <!-- 중앙 퀵 상태 텍스트 -->
+      <div class="nav-center-menu">
+        <span class="nav-item-active" id="navGradeTitle">2026 AUTONOMOUS CLASSROOM</span>
+      </div>
+
+      <!-- 우측 액션 툴바 -->
+      <div class="nav-actions">
+        <button id="btnSoundToggle" class="tesla-btn-ghost" title="음향 효과 켜기/끄기">
+          <span class="btn-icon">🔊</span>
+          <span class="btn-text">SOUND ON</span>
+        </button>
+        <button id="btnManage" class="tesla-btn-ghost" title="학생 및 역할 목록 수정">
+          <span class="btn-icon">⚙️</span>
+          <span class="btn-text">CONFIG</span>
+        </button>
+        <button id="btnLoadSheet" class="tesla-btn-ghost" title="스프레드시트에서 동기화">
+          <span class="btn-icon">🔄</span>
+          <span class="btn-text">SHEET LOAD</span>
+        </button>
+        <button id="btnSaveSheet" class="tesla-btn-ghost" title="스프레드시트에 결과 전송">
+          <span class="btn-icon">💾</span>
+          <span class="btn-text">SHEET SAVE</span>
+        </button>
+        <button id="btnPrint" class="tesla-btn-outline" title="A4 게시판 부착용 출력">
+          <span class="btn-icon">🖨️</span>
+          <span class="btn-text">A4 PRINT</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 메인 콘텐트 컨테이너 -->
   <div class="app-container">
-    
-    <!-- 최상단 헤더 -->
-    <header class="main-header no-print">
-      <div class="header-top">
-        <div class="class-title-badge">
-          <span class="badge-icon">🏫</span>
-          <span class="badge-text" id="classGradeBadge">2026학년도 학급 자치</span>
-        </div>
-        <div class="header-actions">
-          <button id="btnSoundToggle" class="btn-tool" title="배경 효과음 켜기/끄기">
-            <span class="tool-icon">🔊</span>
-            <span class="tool-text">효과음 ON</span>
-          </button>
-          <button id="btnManage" class="btn-tool" title="학생 및 역할 목록 수정">
-            <span class="tool-icon">✏️</span>
-            <span class="tool-text">명단/역할 편집</span>
-          </button>
-          <button id="btnLoadSheet" class="btn-tool btn-sheet" title="구글 스프레드시트에서 불러오기">
-            <span class="tool-icon">🔄</span>
-            <span class="tool-text">시트 불러오기</span>
-          </button>
-          <button id="btnSaveSheet" class="btn-tool btn-sheet" title="구글 스프레드시트에 저장하기">
-            <span class="tool-icon">💾</span>
-            <span class="tool-text">시트에 결과 저장</span>
-          </button>
-          <button id="btnPrint" class="btn-tool btn-print" title="A4 게시판 부착용 출력">
-            <span class="tool-icon">🖨️</span>
-            <span class="tool-text">A4 인쇄하기</span>
-          </button>
-        </div>
-      </div>
 
-      <div class="header-title-box">
-        <h1 class="main-title" id="classMainTitle" contenteditable="false">
-          ✨ <span id="displayClassName">3학년 2반</span> 1인 1역할 배정하기 ✨
+    <!-- 테슬라 스타일 히어로 섹션 -->
+    <header class="tesla-hero no-print">
+      <div class="hero-backdrop"></div>
+      
+      <div class="hero-content">
+        <div class="hero-badge-tag">
+          <span class="status-indicator-dot"></span>
+          <span>AUTONOMOUS CLASSROOM OS</span>
+        </div>
+
+        <h1 class="hero-title" id="classMainTitle">
+          <span class="hero-title-main" id="displayClassName">3학년 2반</span>
+          <span class="hero-title-sub">MODEL 1:1 ROLE ASSIGNMENT</span>
         </h1>
-        <p class="sub-title">모두가 주인공이 되어 함께 가꾸는 행복하고 따뜻한 우리 교실 💛</p>
-      </div>
 
-      <!-- 정보 요약 바 -->
-      <div class="summary-pill-bar">
-        <div class="summary-pill">
-          <span class="pill-icon">👦👧</span>
-          <span class="pill-label">학생 수:</span>
-          <strong id="studentCountBadge">12명</strong>
+        <p class="hero-description">
+          공정하고 투명한 알고리즘 기반 학급 1인 1역할 배정 시스템
+        </p>
+
+        <!-- 테슬라 차량 제원 스타일 스펙 바 (Specs HUD) -->
+        <div class="tesla-specs-bar">
+          <div class="spec-item">
+            <span class="spec-value" id="studentCountBadge">12</span>
+            <span class="spec-unit">STUDENTS</span>
+            <span class="spec-sub">총 학생 수</span>
+          </div>
+          <div class="spec-divider"></div>
+          <div class="spec-item">
+            <span class="spec-value" id="roleCountBadge">12</span>
+            <span class="spec-unit">ROLES</span>
+            <span class="spec-sub">배정 역할 수</span>
+          </div>
+          <div class="spec-divider"></div>
+          <div class="spec-item">
+            <span class="spec-value spec-highlight" id="assignStatusText">READY</span>
+            <span class="spec-unit">STATUS</span>
+            <span class="spec-sub" id="assignStatusPill">배정 준비 완료</span>
+          </div>
+          <div class="spec-divider"></div>
+          <div class="spec-item">
+            <span class="spec-value" id="currentDateDisplay">2026.10</span>
+            <span class="spec-unit">DATE</span>
+            <span class="spec-sub">배정 기준일</span>
+          </div>
         </div>
-        <div class="summary-pill">
-          <span class="pill-icon">📋</span>
-          <span class="pill-label">역할 수:</span>
-          <strong id="roleCountBadge">12개</strong>
+
+        <!-- 테슬라 시그니처 듀얼 CTA 액션 버튼 -->
+        <div class="tesla-cta-group">
+          <button id="btnAssign" class="tesla-btn-primary">
+            <span class="btn-pulse-ring"></span>
+            <span class="btn-label-icon">🎲</span>
+            <span class="btn-label-text">역할 배정하기 (ORDER ASSIGNMENT)</span>
+          </button>
+          <button id="btnReset" class="tesla-btn-secondary">
+            <span>↺ 초기화 (RESET)</span>
+          </button>
         </div>
-        <div class="summary-pill status-pill" id="assignStatusPill">
-          <span class="status-dot"></span>
-          <span id="assignStatusText">배정 준비 완료</span>
-        </div>
-        <div class="summary-pill date-pill">
-          <span class="pill-icon">📅</span>
-          <span id="currentDateDisplay">2026. 10. 17</span>
+        
+        <div class="hero-footnote">
+          <span>스페이스바(Space)를 눌러 즉시 무작위 배정을 실행할 수 있습니다.</span>
         </div>
       </div>
     </header>
 
-    <!-- 메인 컨트롤 영역 -->
-    <section class="action-hero no-print">
-      <div class="hero-card">
-        <div class="hero-left">
-          <div class="hero-mascot">🎯</div>
-          <div class="hero-text">
-            <h2>준비되셨나요? 주사위를 굴려보세요!</h2>
-            <p>12명의 친구들에게 꼭 맞는 멋진 역할이 공정하고 즐겁게 무작위 배정됩니다.</p>
-          </div>
-        </div>
-
-        <div class="hero-right">
-          <div class="btn-group-main">
-            <button id="btnAssign" class="btn-dice-assign">
-              <span class="dice-bounce">🎲</span>
-              <span class="assign-text">역할 배정하기</span>
-            </button>
-            <button id="btnReset" class="btn-reset-assign" title="배정 초기화">
-              <span>↺ 초기화</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- 역할 배정 결과 카드 그리드 -->
     <main class="grid-section">
-      <div class="section-title-wrap no-print">
-        <h3 class="section-title">
-          <span class="section-icon">🌟</span>
-          <span>우리 반 1인 1역할 명단표</span>
-        </h3>
-        <div class="view-switches">
-          <span class="hint-text">💡 카드를 누르면 다른 친구와 역할을 바꿀 수 있어요!</span>
+      <div class="section-header-bar no-print">
+        <div class="section-title-box">
+          <span class="section-label">ASSIGNED FLEET</span>
+          <h2 class="section-title">학급 1인 1역할 조직 명단표</h2>
+        </div>
+        <div class="section-meta-box">
+          <span class="meta-chip">💡 카드를 클릭하면 학생 간 역할을 즉시 변경(SWAP)할 수 있습니다.</span>
         </div>
       </div>
 
-      <!-- 화면 표시용 카드 그리드 -->
+      <!-- 카드 그리드 (테슬라 다크 글래스모피즘 & 메탈릭 보더) -->
       <div id="cardsGrid" class="cards-grid">
-        <!-- 자바스크립트로 12장의 귀여운 카드 자동 생성 -->
+        <!-- 자바스크립트로 12장의 테슬라 스타일 카드 자동 생성 -->
       </div>
     </main>
 
     <!-- 교실 게시판 부착용 A4 인쇄 전용 영역 (인쇄 시 자동 활성화) -->
     <section id="printArea" class="print-area">
       <div class="print-page">
-        <!-- 인쇄 헤더 -->
+        <!-- 인쇄 헤더: 깔끔하고 정돈된 미니멀 타이포그래피 -->
         <div class="print-header">
           <div class="print-meta-top">
-            <span class="print-school-year" id="printYearText">2026학년도</span>
-            <span class="print-stamp-box">담임 확인: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(인)</span>
+            <span class="print-school-year" id="printYearText">2026학년도 학급 자치 조직</span>
+            <span class="print-stamp-box">담임 교사 확인: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(인)</span>
           </div>
           <h1 class="print-main-title" id="printTitleText">
-            🏫 <span id="printClassTitle">3학년 2반</span> 1인 1역할 조직표 🏫
+            [ <span id="printClassTitle">3학년 2반</span> ] 1인 1역할 배정 조직표
           </h1>
           <p class="print-slogan">
-            "우리는 서로 돕고 배려하며, 내 역할에 최선을 다하는 멋진 어린이입니다!"
+            "우리는 서로 배려하고 협력하며 각자의 역할에 책임과 최선을 다합니다."
           </p>
           <div class="print-sub-info">
             <span>📅 <strong>배정 일자:</strong> <span id="printDateText">2026년 10월 17일</span></span>
-            <span>👥 <strong>학급 인원:</strong> 12명 (1인 1역할 실천)</span>
+            <span>👥 <strong>총 인원:</strong> 12명 (1인 1역할 체계)</span>
+            <span>⚡ <strong>배정 방식:</strong> 알고리즘 무작위 공정 배정</span>
           </div>
         </div>
 
@@ -151,10 +173,10 @@
             <thead>
               <tr>
                 <th style="width: 8%;">번호</th>
-                <th style="width: 18%;">학생 이름</th>
-                <th style="width: 24%;">배정된 역할</th>
-                <th style="width: 38%;">주요 담당 임무</th>
-                <th style="width: 12%;">실천 서명</th>
+                <th style="width: 18%;">학생 성명</th>
+                <th style="width: 24%;">담당 역할</th>
+                <th style="width: 38%;">주요 직무 및 책임</th>
+                <th style="width: 12%;">서명 / 확인</th>
               </tr>
             </thead>
             <tbody id="printTableBody">
@@ -166,9 +188,9 @@
         <!-- 인쇄 푸터 -->
         <div class="print-footer">
           <div class="pledge-box">
-            <strong>🌈 우리의 실천 약속</strong>
-            <p>1. 매일 아침과 방과 후에 나의 역할을 잊지 않고 성실히 실천해요.</p>
-            <p>2. 도움이 필요한 친구가 있으면 언제든 기쁜 마음으로 함께 도와요.</p>
+            <strong>📋 학급 1인 1역할 실천 다짐</strong>
+            <p>1. 내게 주어진 역할에 긍지와 책임을 가지고 매일 꾸준히 실천하겠습니다.</p>
+            <p>2. 도움이 필요한 친구가 있을 때에는 서로 기꺼이 협력하여 따뜻한 교실을 만들겠습니다.</p>
           </div>
           <div class="print-signature-line">
             <span>○○초등학교 <span id="printFooterClass">3학년 2반</span> 어린이 일동</span>
@@ -177,21 +199,28 @@
       </div>
     </section>
 
-    <!-- 하단 푸터 -->
-    <footer class="app-footer no-print">
-      <p>💡 교실에서 빔프로젝터나 TV로 화면을 띄워놓고 [🎲 역할 배정하기]를 누르면 아이들의 환호성이 터져 나와요!</p>
+    <!-- 테슬라 스타일 모던 푸터 -->
+    <footer class="tesla-footer no-print">
+      <div class="footer-brand-line">
+        <span class="footer-logo">TESLA CLASSROOM</span>
+        <span class="footer-copy">© 2026 AUTONOMOUS EDUCATION SYSTEM</span>
+      </div>
       <div class="footer-links">
-        <span>초등 학급 경영 필수 도구</span> · <span>GitHub Pages 무료 호스팅 호환</span> · <span>Made with 💖 for Teachers</span>
+        <span>Privacy & Legal</span>
+        <span>Fleet Assignment</span>
+        <span>A4 Classroom Board</span>
+        <span>Google Apps Script Sync</span>
+        <span>GitHub Pages Hosted</span>
       </div>
     </footer>
   </div>
 
-  <!-- [모달 1] 구글 스프레드시트 연동 및 Apps Script 가이드 모달 -->
+  <!-- [모달 1] 구글 스프레드시트 연동 모달 (테슬라 컨피규레이터 다크 패널) -->
   <div id="sheetModal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-icon">📊</span>
+          <span class="modal-tag">SYNC MATRIX</span>
           <h3>구글 스프레드시트(Apps Script) 연동</h3>
         </div>
         <button class="btn-close-modal" id="btnCloseSheetModal">&times;</button>
@@ -199,27 +228,27 @@
 
       <div class="modal-body">
         <p class="modal-desc">
-          구글 스프레드시트와 연결하여 학생 명단과 역할을 손쉽게 가져오고, 배정 결과를 바로 시트에 저장할 수 있습니다.
+          구글 스프레드시트와 실시간 연동하여 학생 명단을 로드하고, 배정 결과를 데이터베이스에 즉시 동기화합니다.
         </p>
 
-        <!-- 현재 바로 사용 가능한 클립보드 복사 -->
+        <!-- 원클릭 클립보드 복사 -->
         <div class="quick-sheet-box">
           <div class="quick-box-header">
-            <strong>⚡ 지금 바로 시트에 붙여넣기 (원클릭)</strong>
-            <span class="badge-mini">간편 기능</span>
+            <strong>원클릭 스프레드시트 붙여넣기 (TSV)</strong>
+            <span class="badge-mini">DIRECT CLIPBOARD</span>
           </div>
           <p class="quick-box-desc">
-            스프레드시트에 바로 <code>Ctrl + V</code>로 붙여넣을 수 있는 표 형태로 복사됩니다.
+            구글 스프레드시트 임의의 셀을 클릭한 뒤 <code>Ctrl + V</code>를 누르면 바로 표로 입력됩니다.
           </p>
           <div class="quick-actions">
-            <button id="btnCopyTsv" class="btn-sub-action">📋 스프레드시트용 표 복사하기</button>
-            <button id="btnDownloadCsv" class="btn-sub-action">📥 CSV 파일 다운로드</button>
+            <button id="btnCopyTsv" class="tesla-btn-small">📋 표 데이터 클립보드 복사</button>
+            <button id="btnDownloadCsv" class="tesla-btn-small-ghost">📥 CSV 파일 내보내기</button>
           </div>
         </div>
 
-        <!-- Apps Script Web App 연동 설정 -->
+        <!-- Apps Script Web App 설정 -->
         <div class="script-setting-box">
-          <label for="scriptUrlInput"><strong>🔗 구글 Apps Script Web App URL:</strong></label>
+          <label for="scriptUrlInput"><strong>GOOGLE APPS SCRIPT WEB APP URL:</strong></label>
           <div class="input-with-button">
             <input 
               type="url" 
@@ -227,14 +256,14 @@
               placeholder="https://script.google.com/macros/s/.../exec" 
               class="modal-input"
             />
-            <button id="btnSaveScriptUrl" class="btn-primary-inline">주소 저장</button>
+            <button id="btnSaveScriptUrl" class="tesla-btn-inline">URL 저장</button>
           </div>
           <p class="helper-text">
-            💡 주소를 저장해두면 상단의 [🔄 시트 불러오기] 및 [💾 시트에 결과 저장] 클릭 시 실시간 API 통신이 작동합니다.
+            * 저장된 URL은 향후 상단 [SHEET LOAD] 및 [SHEET SAVE] 클릭 시 즉시 비동기 통신에 사용됩니다.
           </p>
         </div>
 
-        <!-- Apps Script 샘플 코드 가이드 아코디언 -->
+        <!-- Apps Script 샘플 코드 가이드 -->
         <details class="code-guide-details">
           <summary>📜 Google Apps Script 배포 코드 템플릿 보기 (복사 가능)</summary>
           <div class="code-box-wrap">
@@ -244,7 +273,6 @@
 function doGet(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = sheet.getDataRange().getValues();
-  // 1행 헤더 제외, A열: 학생이름, B열: 역할이름, C열: 역할설명
   var students = [];
   var roles = [];
   for (var i = 1; i &lt; data.length; i++) {
@@ -252,7 +280,7 @@ function doGet(e) {
     if (data[i][1]) {
       roles.push({
         name: data[i][1],
-        desc: data[i][2] || "즐겁게 성실히 실천해요"
+        desc: data[i][2] || "성실히 직무를 실천합니다"
       });
     }
   }
@@ -265,10 +293,10 @@ function doGet(e) {
 function doPost(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var payload = JSON.parse(e.postData.contents);
-  var assignments = payload.assignments; // [{student, role, desc}]
+  var assignments = payload.assignments;
   
   sheet.clear();
-  sheet.appendRow(["번호", "학생 이름", "배정된 역할", "역할 설명", "배정일시"]);
+  sheet.appendRow(["번호", "학생 이름", "배정된 역할", "역할 임무", "배정일시"]);
   
   for (var i = 0; i &lt; assignments.length; i++) {
     var item = assignments[i];
@@ -286,8 +314,8 @@ function doPost(e) {
       </div>
 
       <div class="modal-footer">
-        <button id="btnExecuteSheetSync" class="btn-modal-primary">지금 시트와 통신 실행</button>
-        <button class="btn-modal-cancel" id="btnCancelSheetModal">닫기</button>
+        <button id="btnExecuteSheetSync" class="tesla-btn-primary modal-action-btn">지금 시트와 통신 실행</button>
+        <button class="tesla-btn-secondary modal-cancel-btn" id="btnCancelSheetModal">닫기</button>
       </div>
     </div>
   </div>
@@ -297,7 +325,7 @@ function doPost(e) {
     <div class="modal-card modal-large">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-icon">📝</span>
+          <span class="modal-tag">CONFIGURATOR</span>
           <h3>학생 명단 및 역할 목록 편집</h3>
         </div>
         <button class="btn-close-modal" id="btnCloseManageModal">&times;</button>
@@ -305,68 +333,63 @@ function doPost(e) {
 
       <div class="modal-body">
         <div class="edit-columns">
-          <!-- 학생 명단 편집 -->
           <div class="edit-col">
             <div class="col-header">
-              <h4>👦👧 학생 명단 (<span id="editStudentCount">12</span>명)</h4>
-              <button id="btnQuickFillStudents" class="btn-text-action" title="기본 12명 예시 채우기">예시 채우기</button>
+              <h4>STUDENT FLEET (<span id="editStudentCount">12</span>명)</h4>
+              <button id="btnQuickFillStudents" class="btn-text-action">기본 12명 로드</button>
             </div>
             <p class="edit-hint">학생 이름을 한 줄에 한 명씩 입력하세요.</p>
-            <textarea id="studentTextarea" class="edit-textarea" rows="12" placeholder="김민준&#10;이서아&#10;..."></textarea>
+            <textarea id="studentTextarea" class="edit-textarea" rows="12"></textarea>
           </div>
 
-          <!-- 역할 목록 편집 -->
           <div class="edit-col">
             <div class="col-header">
-              <h4>📋 학급 역할 목록 (<span id="editRoleCount">12</span>개)</h4>
-              <button id="btnQuickFillRoles" class="btn-text-action" title="기본 12역할 채우기">기본 역할 채우기</button>
+              <h4>ROLE CATALOG (<span id="editRoleCount">12</span>개)</h4>
+              <button id="btnQuickFillRoles" class="btn-text-action">기본 12역할 로드</button>
             </div>
-            <p class="edit-hint">형식: [역할명] 또는 [역할명 | 설명]</p>
-            <textarea id="roleTextarea" class="edit-textarea" rows="12" placeholder="칠판 도우미 | 칠판을 깨끗이 닦고 분필 정리&#10;우유 급식 도우미 | 우유 상자 챙기기&#10;..."></textarea>
+            <p class="edit-hint">형식: [역할명] 또는 [역할명 | 세부 임무 설명]</p>
+            <textarea id="roleTextarea" class="edit-textarea" rows="12"></textarea>
           </div>
         </div>
 
-        <!-- 학급명 설정 -->
         <div class="class-config-box">
-          <label for="inputClassName"><strong>🏫 우리 학급 명칭:</strong></label>
-          <input type="text" id="inputClassName" class="modal-input" value="3학년 2반" placeholder="예: 3학년 2반, 5학년 무지개반" />
+          <label for="inputClassName"><strong>CLASSROOM IDENTIFIER (학급명):</strong></label>
+          <input type="text" id="inputClassName" class="modal-input" value="3학년 2반" />
         </div>
       </div>
 
       <div class="modal-footer">
-        <button id="btnSaveManageData" class="btn-modal-primary">저장하고 반영하기</button>
-        <button class="btn-modal-cancel" id="btnCancelManageModal">취소</button>
+        <button id="btnSaveManageData" class="tesla-btn-primary modal-action-btn">설정 저장 및 즉시 반영</button>
+        <button class="tesla-btn-secondary modal-cancel-btn" id="btnCancelManageModal">취소</button>
       </div>
     </div>
   </div>
 
-  <!-- [모달 3] 카드 스왑 / 개별 변경 모달 -->
+  <!-- [모달 3] 카드 스왑 (자리 바꾸기) 모달 -->
   <div id="swapModal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-icon">🔀</span>
-          <h3>역할 맞바꾸기</h3>
+          <span class="modal-tag">SWAP MODULE</span>
+          <h3>역할 맞바꾸기 (ROLE SWAP)</h3>
         </div>
         <button class="btn-close-modal" id="btnCloseSwapModal">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc" id="swapTargetDesc">
-          <strong>김민준</strong> 학생의 역할을 누구와 바꿀까요?
-        </p>
+        <p class="modal-desc" id="swapTargetDesc"></p>
         <div class="swap-selector-group">
-          <label for="swapTargetSelect">교환할 다른 학생 선택:</label>
+          <label for="swapTargetSelect">교환 대상 학생 선택:</label>
           <select id="swapTargetSelect" class="modal-select"></select>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="btnConfirmSwap" class="btn-modal-primary">역할 맞바꾸기</button>
-        <button class="btn-modal-cancel" id="btnCancelSwapModal">취소</button>
+        <button id="btnConfirmSwap" class="tesla-btn-primary modal-action-btn">역할 맞바꾸기 실행</button>
+        <button class="tesla-btn-secondary modal-cancel-btn" id="btnCancelSwapModal">취소</button>
       </div>
     </div>
   </div>
 
-  <!-- 토스트 알림 메시지 컨테이너 -->
+  <!-- 테슬라 스타일 토스트 알림 컨테이너 -->
   <div id="toastContainer" class="toast-container"></div>
 
   <!-- 핵심 동작 스크립트 연결 -->
