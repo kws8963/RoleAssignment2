@@ -1,0 +1,6 @@
+{
+  "name": "학급 1인 1역할 배정 시스템",
+  "description": "초등학교 학급을 위한 귀엽고 산뜻한 파스텔톤 1인 1역할 랜덤 배정 웹 애플리케이션입니다. A4 인쇄 및 구글 스프레드시트 연동 준비 완료.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
