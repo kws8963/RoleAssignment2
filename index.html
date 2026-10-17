@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CLASSROOM OS | 1인 1역할 자율 배정 시스템</title>
-  <meta name="description" content="모던 미니멀 감성의 프리미엄 학급 1인 1역할 무작위 배정 웹 애플리케이션. A4 인쇄 및 구글 스프레드시트 연동 지원." />
+  <meta name="description" content="모던 미니멀 감성의 프리미엄 학급 1인 1역할 무작위 배정 웹 애플리케이션. 구글 스프레드시트(Apps Script) 양방향 동기화 및 A4 인쇄 지원." />
   
   <!-- 웹폰트: 모던하고 정갈한 산세리프 Inter & Noto Sans KR -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -105,21 +105,28 @@
 
       <!-- 우측 액션 툴바 -->
       <div class="nav-actions">
+        <!-- ⚙️ 시트 URL 설정 -->
+        <button id="btnSheetConfig" class="modern-btn-ghost btn-sheet-cfg" title="구글 스프레드시트 웹앱 URL 설정">
+          <span class="btn-icon">⚙️</span>
+          <span class="btn-text">시트 URL 설정</span>
+        </button>
+        <!-- 🔄 시트에서 불러오기 -->
+        <button id="btnLoadSheet" class="modern-btn-ghost btn-load-sheet" title="구글 스프레드시트에서 명단/결과 불러오기">
+          <span class="btn-icon">🔄</span>
+          <span class="btn-text">시트 불러오기</span>
+        </button>
+        <!-- 💾 배정 결과 시트에 저장 -->
+        <button id="btnSaveSheet" class="modern-btn-ghost btn-save-sheet" title="배정 결과를 구글 스프레드시트에 저장">
+          <span class="btn-icon">💾</span>
+          <span class="btn-text">시트에 결과 저장</span>
+        </button>
+        <button id="btnManage" class="modern-btn-ghost" title="학생 및 역할 목록 직접 편집">
+          <span class="btn-icon">✏️</span>
+          <span class="btn-text">명단 편집</span>
+        </button>
         <button id="btnSoundToggle" class="modern-btn-ghost" title="음향 효과 켜기/끄기">
           <span class="btn-icon">🔊</span>
           <span class="btn-text">SOUND ON</span>
-        </button>
-        <button id="btnManage" class="modern-btn-ghost" title="학생 및 역할 목록 수정">
-          <span class="btn-icon">⚙️</span>
-          <span class="btn-text">CONFIG</span>
-        </button>
-        <button id="btnLoadSheet" class="modern-btn-ghost" title="스프레드시트에서 동기화">
-          <span class="btn-icon">🔄</span>
-          <span class="btn-text">SHEET LOAD</span>
-        </button>
-        <button id="btnSaveSheet" class="modern-btn-ghost" title="스프레드시트에 결과 전송">
-          <span class="btn-icon">💾</span>
-          <span class="btn-text">SHEET SAVE</span>
         </button>
         <button id="btnPrint" class="modern-btn-primary-sm" title="A4 게시판 부착용 출력">
           <span class="btn-icon">🖨️</span>
@@ -131,6 +138,29 @@
 
   <!-- 메인 콘텐트 래퍼 -->
   <div class="app-container" id="mainAppContent">
+
+    <!-- 구글 스프레드시트 연동 상태 컨트롤 바 -->
+    <div class="sheet-sync-banner no-print">
+      <div class="sync-banner-left">
+        <div class="sync-status-indicator" id="syncStatusBadge">
+          <span class="sync-dot"></span>
+          <span class="sync-text" id="syncStatusText">스프레드시트 연결됨</span>
+        </div>
+        <div class="sync-url-preview" id="syncUrlPreview" title="클릭하여 시트 URL 변경">
+          https://script.google.com/macros/s/.../exec
+        </div>
+      </div>
+      <div class="sync-banner-actions">
+        <button id="btnBannerLoad" class="sync-quick-btn" title="구글 시트에서 명단과 결과를 새로고침하여 불러옵니다">
+          <span class="quick-icon">🔄</span>
+          <span class="quick-text">시트에서 명단/결과 불러오기</span>
+        </button>
+        <button id="btnBannerSave" class="sync-quick-btn sync-quick-save" title="현재 배정 결과를 구글 스프레드시트에 영구 저장합니다">
+          <span class="quick-icon">💾</span>
+          <span class="quick-text">배정 결과 구글 시트에 저장</span>
+        </button>
+      </div>
+    </div>
 
     <!-- 모던 화이트 히어로 섹션 -->
     <header class="modern-hero no-print">
@@ -149,7 +179,7 @@
           공정하고 투명한 알고리즘 기반 학급 1인 1역할 무작위 자율 배정 시스템
         </p>
 
-        <!-- 제원 스타일 HUD 스펙 바 (밝고 깨끗한 화이트 & 실버) -->
+        <!-- 제원 스타일 HUD 스펙 바 -->
         <div class="modern-specs-bar">
           <div class="spec-item">
             <span class="spec-value" id="studentCountBadge">12</span>
@@ -205,7 +235,7 @@
         </div>
       </div>
 
-      <!-- 카드 그리드 (산뜻한 화이트 & 프리미엄 메탈릭 라인) -->
+      <!-- 카드 그리드 -->
       <div id="cardsGrid" class="cards-grid">
         <!-- 자바스크립트로 12장의 카드 자동 생성 -->
       </div>
@@ -281,40 +311,28 @@
     </footer>
   </div>
 
-  <!-- [모달 1] 구글 스프레드시트 연동 모달 -->
+  <!-- [모달 1] 구글 스프레드시트 연동 및 웹앱 URL 설정 모달 -->
   <div id="sheetModal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-tag">SYNC MATRIX</span>
-          <h3>구글 스프레드시트(Apps Script) 연동</h3>
+          <span class="modal-tag">GOOGLE APPS SCRIPT SYNC</span>
+          <h3>구글 스프레드시트 웹앱(Apps Script) 연동 설정</h3>
         </div>
         <button class="btn-close-modal" id="btnCloseSheetModal">&times;</button>
       </div>
 
       <div class="modal-body">
         <p class="modal-desc">
-          구글 스프레드시트와 실시간 연동하여 학생 명단을 가져오고, 배정 결과를 시트에 즉시 저장할 수 있습니다.
+          구글 스프레드시트의 Apps Script 웹앱 URL을 등록하면, 학생 명단 및 역할을 실시간으로 불러오고 배정 결과를 시트에 즉시 영구 저장할 수 있습니다.
         </p>
 
-        <!-- 원클릭 클립보드 복사 -->
-        <div class="quick-sheet-box">
-          <div class="quick-box-header">
-            <strong>원클릭 스프레드시트 붙여넣기 (TSV)</strong>
-            <span class="badge-mini">DIRECT CLIPBOARD</span>
-          </div>
-          <p class="quick-box-desc">
-            구글 스프레드시트 임의의 셀을 클릭한 뒤 <code>Ctrl + V</code>를 누르면 바로 표로 입력됩니다.
-          </p>
-          <div class="quick-actions">
-            <button id="btnCopyTsv" class="modern-btn-small">📋 표 데이터 클립보드 복사</button>
-            <button id="btnDownloadCsv" class="modern-btn-small-ghost">📥 CSV 파일 내보내기</button>
-          </div>
-        </div>
-
-        <!-- Apps Script Web App 설정 -->
+        <!-- Apps Script Web App 설정 인풋 -->
         <div class="script-setting-box">
-          <label for="scriptUrlInput"><strong>GOOGLE APPS SCRIPT WEB APP URL:</strong></label>
+          <div class="setting-header-row">
+            <label for="scriptUrlInput"><strong>🔗 GOOGLE APPS SCRIPT 웹앱 주소(URL):</strong></label>
+            <button id="btnResetDefaultUrl" class="btn-text-action" title="제공해주신 기본 웹앱 주소로 복원">기본 주소로 복원</button>
+          </div>
           <div class="input-with-button">
             <input 
               type="url" 
@@ -325,22 +343,58 @@
             <button id="btnSaveScriptUrl" class="modern-btn-inline">URL 저장</button>
           </div>
           <p class="helper-text">
-            * 저장된 URL은 향후 상단 [SHEET LOAD] 및 [SHEET SAVE] 클릭 시 즉시 비동기 통신에 사용됩니다.
+            * 주소는 브라우저의 <code>localStorage</code>에 안전하게 저장되어 재방문 시에도 자동 유지됩니다.
           </p>
         </div>
 
-        <!-- Apps Script 샘플 코드 가이드 -->
+        <!-- 즉각 통신 실행 박스 -->
+        <div class="sheet-action-panel">
+          <div class="sheet-action-card">
+            <div class="action-card-info">
+              <strong>📥 시트에서 데이터 가져오기 (GET)</strong>
+              <p>스프레드시트에 등록된 학생 명단, 역할 목록, 기존 배정 결과를 불러옵니다.</p>
+            </div>
+            <button id="btnModalExecuteLoad" class="modern-btn-small">🔄 시트 불러오기 실행</button>
+          </div>
+
+          <div class="sheet-action-card">
+            <div class="action-card-info">
+              <strong>📤 배정 결과 시트에 저장하기 (POST)</strong>
+              <p>현재 완료된 1인 1역할 배정 결과를 구글 스프레드시트에 전송하여 기록합니다.</p>
+            </div>
+            <button id="btnModalExecuteSave" class="modern-btn-small-dark">💾 배정 결과 시트 저장</button>
+          </div>
+        </div>
+
+        <!-- 원클릭 클립보드 복사 백업 -->
+        <div class="quick-sheet-box">
+          <div class="quick-box-header">
+            <strong>⚡ 오프라인 / 수동 스프레드시트 복사 (TSV)</strong>
+            <span class="badge-mini">DIRECT CLIPBOARD</span>
+          </div>
+          <p class="quick-box-desc">
+            스프레드시트 임의의 셀을 클릭하고 <code>Ctrl + V</code>를 누르면 바로 표 형태로 입력됩니다.
+          </p>
+          <div class="quick-actions">
+            <button id="btnCopyTsv" class="modern-btn-small-ghost">📋 표 데이터 클립보드 복사</button>
+            <button id="btnDownloadCsv" class="modern-btn-small-ghost">📥 CSV 파일 다운로드</button>
+          </div>
+        </div>
+
+        <!-- Apps Script 샘플 가이드 -->
         <details class="code-guide-details">
-          <summary>📜 Google Apps Script 배포 코드 템플릿 보기 (복사 가능)</summary>
+          <summary>📜 Google Apps Script 배포 코드 템플릿 보기 (CORS 안전 대응)</summary>
           <div class="code-box-wrap">
-            <pre><code id="gasCodeTemplate">// [구글 스프레드시트 > 확장 프로그램 > Apps Script]에 붙여넣고
-// [배포 > 새 배포 > 웹 앱 (액세스 권한: 모든 사용자)]로 배포하세요.
+            <pre><code id="gasCodeTemplate">// [스프레드시트 > 확장 프로그램 > Apps Script]에 붙여넣고
+// [배포 > 새 배포 > 웹 앱 (액세스: 모든 사용자)]로 배포하세요.
 
 function doGet(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = sheet.getDataRange().getValues();
   var students = [];
   var roles = [];
+  var results = [];
+  
   for (var i = 1; i &lt; data.length; i++) {
     if (data[i][0]) students.push(data[i][0]);
     if (data[i][1]) {
@@ -351,15 +405,17 @@ function doGet(e) {
     }
   }
   return ContentService.createTextOutput(JSON.stringify({
+    status: "success",
     students: students,
-    roles: roles
+    roles: roles,
+    results: results
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var payload = JSON.parse(e.postData.contents);
-  var assignments = payload.assignments;
+  var assignments = payload.assignments || [];
   
   sheet.clear();
   sheet.appendRow(["번호", "학생 이름", "배정된 역할", "역할 임무", "배정일시"]);
@@ -380,7 +436,6 @@ function doPost(e) {
       </div>
 
       <div class="modal-footer">
-        <button id="btnExecuteSheetSync" class="modern-btn-primary modal-action-btn">지금 시트와 통신 실행</button>
         <button class="modern-btn-secondary modal-cancel-btn" id="btnCancelSheetModal">닫기</button>
       </div>
     </div>

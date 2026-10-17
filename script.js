@@ -1,21 +1,27 @@
 /**
  * CLASSROOM OS - script.js
  * Modern Minimalist Autonomous Classroom Role Assignment Engine
+ * 
  * Features:
- * - Fullscreen Backdrop Blur & 1-by-1 Sequential Role Reveal (1 sec interval)
- * - Fast-Forward (즉시 일괄 공개) Button
- * - Fisher-Yates Stochastic Matching Algorithm
- * - Web Audio API Harmonic Synthesis & Cyber Particles
- * - A4 Print Sheet Synchronization
- * - Google Apps Script / TSV / CSV Export
+ * 1. Google Sheets Apps Script Full Bidirectional Sync:
+ *    - GET Request: fetch students, roles, and assignments on load & on demand
+ *    - POST Request: save results with CORS Preflight bypass ("Content-Type": "text/plain;charset=utf-8")
+ *    - Real-time loading states & visual feedback for educators
+ * 2. Fullscreen Backdrop Blur & 1-by-1 Sequential Role Reveal (1 sec interval)
+ * 3. Fast-Forward (즉시 일괄 공개) Button
+ * 4. Fisher-Yates Stochastic Matching Algorithm
+ * 5. Web Audio API Harmonic Synthesis & Cyber Particles
+ * 6. A4 Print Sheet Synchronization & TSV/CSV Export
  */
 
 (function () {
   'use strict';
 
   // ==========================================
-  // 1. 기본 데이터 세트 (학생 12명, 학급 역할 12개)
+  // 1. 기본 Apps Script 웹앱 URL & 예시 데이터
   // ==========================================
+  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwjNKKk3dxBp5_yzF0FRUriXU8Tco0_YlY1NG66ycqS9BYwyp2VdmfxhCsoGo0Lz9gu/exec';
+
   const DEFAULT_STUDENTS = [
     '김민준', '이서아', '박도윤', '최지우',
     '정하준', '강서연', '윤은우', '조시은',
@@ -111,14 +117,16 @@
     isRevealing: false,
     revealTimer: null,
     soundEnabled: true,
-    sheetUrl: '',
+    sheetUrl: DEFAULT_SHEET_URL,
+    isSyncing: false,
     swapSourceIndex: null
   };
 
   const STORAGE_KEY = 'classroom_os_role_v3';
+  const SHEET_URL_KEY = 'classroom_sheet_url_v1';
 
   // ==========================================
-  // 3. Web Audio API 신스 사운드 시스템
+  // 3. Web Audio API 사운드 시스템
   // ==========================================
   const SoundFX = {
     ctx: null,
@@ -132,14 +140,13 @@
       }
     },
 
-    // 1명씩 공개될 때마다 살짝 피치가 올라가는 경쾌한 사운드
     playRevealTick(index = 0) {
       if (!state.soundEnabled) return;
       this.init();
       if (!this.ctx) return;
 
       const now = this.ctx.currentTime;
-      const baseFreq = 440; // A4
+      const baseFreq = 440;
       const scale = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19];
       const semitone = scale[index % scale.length];
       const freq = baseFreq * Math.pow(2, semitone / 12);
@@ -159,13 +166,12 @@
       osc.stop(now + 0.3);
     },
 
-    // 최종 완료 팡파르 화음
     playFanfare() {
       if (!state.soundEnabled) return;
       this.init();
       if (!this.ctx) return;
 
-      const chords = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      const chords = [523.25, 659.25, 783.99, 1046.50];
       const now = this.ctx.currentTime;
 
       chords.forEach((freq, idx) => {
@@ -185,7 +191,6 @@
       });
     },
 
-    // 햅틱 UI 클릭음
     playClick() {
       if (!state.soundEnabled) return;
       this.init();
@@ -233,7 +238,7 @@
     burst() {
       if (!this.canvas) return;
       this.resize();
-      const colors = ['#e82127', '#0f172a', '#38bdf8', '#fbbf24', '#ffffff', '#e82127'];
+      const colors = ['#e82127', '#0f172a', '#38bdf8', '#fbbf24', '#ffffff', '#16a34a'];
       const count = 120;
 
       for (let i = 0; i < count; i++) {
@@ -292,7 +297,7 @@
   };
 
   // ==========================================
-  // 5. 로컬스토리지 동기화
+  // 5. 로컬스토리지 저장 및 복원
   // ==========================================
   function saveStateToStorage() {
     try {
@@ -301,10 +306,10 @@
         students: state.students,
         roles: state.roles,
         assignments: state.assignments,
-        sheetUrl: state.sheetUrl,
         soundEnabled: state.soundEnabled
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      localStorage.setItem(SHEET_URL_KEY, state.sheetUrl);
     } catch (e) {
       console.warn('Storage save error:', e);
     }
@@ -312,6 +317,13 @@
 
   function loadStateFromStorage() {
     try {
+      const savedUrl = localStorage.getItem(SHEET_URL_KEY);
+      if (savedUrl && savedUrl.trim()) {
+        state.sheetUrl = savedUrl.trim();
+      } else {
+        state.sheetUrl = DEFAULT_SHEET_URL;
+      }
+
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -319,7 +331,6 @@
         if (Array.isArray(parsed.students) && parsed.students.length > 0) state.students = parsed.students;
         if (Array.isArray(parsed.roles) && parsed.roles.length > 0) state.roles = parsed.roles;
         if (Array.isArray(parsed.assignments)) state.assignments = parsed.assignments;
-        if (parsed.sheetUrl) state.sheetUrl = parsed.sheetUrl;
         if (typeof parsed.soundEnabled === 'boolean') state.soundEnabled = parsed.soundEnabled;
       }
     } catch (e) {
@@ -328,7 +339,280 @@
   }
 
   // ==========================================
-  // 6. UI 렌더링 및 동기화
+  // 6. 구글 스프레드시트 (Apps Script) 연동 엔진
+  // ==========================================
+
+  // UI 로딩 상태 관리 헬퍼
+  function setLoadButtonsLoading(isLoading) {
+    const navBtn = document.getElementById('btnLoadSheet');
+    const bannerBtn = document.getElementById('btnBannerLoad');
+    const modalBtn = document.getElementById('btnModalExecuteLoad');
+    const badge = document.getElementById('syncStatusBadge');
+    const text = document.getElementById('syncStatusText');
+
+    if (isLoading) {
+      if (navBtn) {
+        navBtn.classList.add('is-loading');
+        navBtn.innerHTML = '<span class="spinner-icon">🔄</span> <span class="btn-text">불러오는 중...</span>';
+      }
+      if (bannerBtn) {
+        bannerBtn.classList.add('is-loading');
+        bannerBtn.innerHTML = '<span class="spinner-icon">🔄</span> <span class="quick-text">시트에서 불러오는 중...</span>';
+      }
+      if (modalBtn) {
+        modalBtn.classList.add('is-loading');
+        modalBtn.innerHTML = '<span class="spinner-icon">🔄</span> 불러오는 중...';
+      }
+      if (badge) {
+        badge.className = 'sync-status-indicator is-connecting';
+      }
+      if (text) {
+        text.textContent = '시트 데이터 동기화 중...';
+      }
+    } else {
+      if (navBtn) {
+        navBtn.classList.remove('is-loading');
+        navBtn.innerHTML = '<span class="btn-icon">🔄</span> <span class="btn-text">시트 불러오기</span>';
+      }
+      if (bannerBtn) {
+        bannerBtn.classList.remove('is-loading');
+        bannerBtn.innerHTML = '<span class="quick-icon">🔄</span> <span class="quick-text">시트에서 명단/결과 불러오기</span>';
+      }
+      if (modalBtn) {
+        modalBtn.classList.remove('is-loading');
+        modalBtn.innerHTML = '🔄 시트 불러오기 실행';
+      }
+      if (badge) {
+        badge.className = 'sync-status-indicator';
+      }
+      if (text) {
+        text.textContent = '스프레드시트 연결됨';
+      }
+    }
+  }
+
+  function setSaveButtonsLoading(isLoading) {
+    const navBtn = document.getElementById('btnSaveSheet');
+    const bannerBtn = document.getElementById('btnBannerSave');
+    const modalBtn = document.getElementById('btnModalExecuteSave');
+
+    if (isLoading) {
+      if (navBtn) {
+        navBtn.classList.add('is-loading');
+        navBtn.innerHTML = '<span class="spinner-icon">💾</span> <span class="btn-text">저장 중...</span>';
+      }
+      if (bannerBtn) {
+        bannerBtn.classList.add('is-loading');
+        bannerBtn.innerHTML = '<span class="spinner-icon">💾</span> <span class="quick-text">시트에 저장 중...</span>';
+      }
+      if (modalBtn) {
+        modalBtn.classList.add('is-loading');
+        modalBtn.innerHTML = '<span class="spinner-icon">💾</span> 저장 중...';
+      }
+    } else {
+      if (navBtn) {
+        navBtn.classList.remove('is-loading');
+        navBtn.innerHTML = '<span class="btn-icon">💾</span> <span class="btn-text">시트에 결과 저장</span>';
+      }
+      if (bannerBtn) {
+        bannerBtn.classList.remove('is-loading');
+        bannerBtn.innerHTML = '<span class="quick-icon">💾</span> <span class="quick-text">배정 결과 구글 시트에 저장</span>';
+      }
+      if (modalBtn) {
+        modalBtn.classList.remove('is-loading');
+        modalBtn.innerHTML = '💾 배정 결과 시트 저장';
+      }
+    }
+  }
+
+  // 1. 구글 시트에서 데이터 불러오기 (GET)
+  async function fetchFromGoogleSheet(options = { isInitial: false }) {
+    const isInitial = options.isInitial || false;
+    const url = state.sheetUrl || DEFAULT_SHEET_URL;
+
+    if (!url) {
+      if (!isInitial) showToast('⚠️ 스프레드시트 웹앱 URL이 설정되지 않았습니다.', 'warning');
+      return;
+    }
+
+    state.isSyncing = true;
+    setLoadButtonsLoading(true);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      let loadedStudentsCount = 0;
+      let loadedRolesCount = 0;
+
+      // 1) 학생 명단 반영
+      if (Array.isArray(data.students) && data.students.length > 0) {
+        state.students = data.students.map(item => {
+          if (typeof item === 'object' && item !== null) {
+            return item.name || item.student || String(item);
+          }
+          return String(item).trim();
+        }).filter(Boolean);
+        loadedStudentsCount = state.students.length;
+      }
+
+      // 2) 학급 역할 목록 반영
+      if (Array.isArray(data.roles) && data.roles.length > 0) {
+        const defaultIcons = ['🧹', '🥛', '💡', '📚', '🌿', '🚶', '📺', '♻️', '🧴', '⚽', '📑', '💌', '⚡', '🛡️', '🛸'];
+        state.roles = data.roles.map((item, idx) => {
+          if (typeof item === 'object' && item !== null) {
+            return {
+              name: item.name || item.role || `역할 ${idx + 1}`,
+              icon: item.icon || defaultIcons[idx % defaultIcons.length],
+              desc: item.desc || item.description || '성실히 직무를 수행합니다.',
+              code: item.code || `UNIT-${idx + 1}`
+            };
+          }
+          const str = String(item).trim();
+          const parts = str.split('|');
+          return {
+            name: parts[0].trim(),
+            icon: defaultIcons[idx % defaultIcons.length],
+            desc: parts[1] ? parts[1].trim() : '성실히 직무를 수행합니다.',
+            code: `UNIT-${idx + 1}`
+          };
+        }).filter(r => r.name);
+        loadedRolesCount = state.roles.length;
+      }
+
+      // 3) 기존 배정 결과(results 또는 assignments)가 시트에 있는 경우 반영
+      const resultsData = data.results || data.assignments;
+      if (Array.isArray(resultsData) && resultsData.length > 0) {
+        state.assignments = resultsData.map((res, idx) => {
+          const studentName = res.student || res.name || (state.students[idx] || `학생 ${idx + 1}`);
+          const roleName = res.role || res.roleName || '역할';
+          const roleItem = state.roles.find(r => r.name === roleName);
+          return {
+            student: studentName,
+            avatar: AVATARS[idx % AVATARS.length],
+            role: roleName,
+            icon: res.icon || roleItem?.icon || '⚡',
+            desc: res.desc || roleItem?.desc || '성실히 직무를 수행합니다.',
+            code: res.code || `UNIT-${idx + 1}`
+          };
+        });
+      }
+
+      // 4) 학급명 갱신
+      if (data.className && typeof data.className === 'string') {
+        state.className = data.className;
+      }
+
+      // 저장 및 렌더링
+      saveStateToStorage();
+      updateHeaderSummary();
+      renderCards(false);
+
+      if (!isInitial) {
+        SoundFX.playClick();
+        showToast(`✅ 시트에서 학생 ${loadedStudentsCount}명, 역할 ${loadedRolesCount}개를 성공적으로 불러왔습니다!`, 'success');
+      } else {
+        showToast(`🔄 구글 시트 데이터가 최신으로 동기화되었습니다. (학생 ${state.students.length}명)`, 'info');
+      }
+
+    } catch (err) {
+      console.warn('Google Sheets GET error:', err);
+      const badge = document.getElementById('syncStatusBadge');
+      const text = document.getElementById('syncStatusText');
+      if (badge) badge.className = 'sync-status-indicator is-error';
+      if (text) text.textContent = '시트 연결 대기 (로컬 모드)';
+
+      if (!isInitial) {
+        showToast('⚠️ 구글 시트 불러오기 실패: 웹앱 주소 및 배포 권한을 확인해 주세요.', 'warning');
+      }
+    } finally {
+      state.isSyncing = false;
+      setLoadButtonsLoading(false);
+    }
+  }
+
+  // 2. 배정 결과 구글 시트에 저장하기 (POST - CORS 완벽 방지)
+  async function saveToGoogleSheet() {
+    if (state.assignments.length === 0) {
+      showToast('⚠️ 저장할 배정 결과가 없습니다. 먼저 [🎲 역할 배정하기]를 실행해 주세요.', 'warning');
+      return;
+    }
+
+    const url = state.sheetUrl || DEFAULT_SHEET_URL;
+    if (!url) {
+      showToast('⚠️ 스프레드시트 웹앱 URL이 설정되지 않았습니다.', 'warning');
+      return;
+    }
+
+    state.isSyncing = true;
+    setSaveButtonsLoading(true);
+
+    try {
+      // CORS Preflight 방지를 위해 text/plain 헤더 사용 필수!
+      const payload = {
+        action: "saveResults",
+        assignments: state.assignments,
+        className: state.className,
+        timestamp: new Date().toISOString(),
+        formattedDate: new Date().toLocaleDateString('ko-KR')
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const responseText = await response.text();
+      let isSuccess = response.ok;
+
+      try {
+        const json = JSON.parse(responseText);
+        if (json.status && json.status === 'success') {
+          isSuccess = true;
+        }
+      } catch (e) {
+        // text/plain 응답일 수도 있음
+      }
+
+      if (isSuccess) {
+        SoundFX.playFanfare();
+        Confetti.burst();
+        showToast(`✅ 배정 결과(${state.assignments.length}명)가 구글 스프레드시트에 안전하게 저장되었습니다!`, 'success');
+        
+        // 시트 모달이 열려있다면 닫기
+        const sheetModal = document.getElementById('sheetModal');
+        if (sheetModal && sheetModal.style.display === 'flex') {
+          setTimeout(() => { sheetModal.style.display = 'none'; }, 500);
+        }
+      } else {
+        throw new Error(responseText || '응답 오류');
+      }
+
+    } catch (err) {
+      console.warn('Google Sheets POST error:', err);
+      showToast('⚠️ 구글 시트 저장 실패: 웹앱 배포 권한(모든 사용자 허용)을 확인해 주세요.', 'warning');
+    } finally {
+      state.isSyncing = false;
+      setSaveButtonsLoading(false);
+    }
+  }
+
+  // ==========================================
+  // 7. UI 렌더링 및 동기화
   // ==========================================
   function updateHeaderSummary() {
     const studentCountEl = document.getElementById('studentCountBadge');
@@ -357,6 +641,12 @@
 
     const printDateText = document.getElementById('printDateText');
     if (printDateText) printDateText.textContent = dateFull;
+
+    // 배너 URL 미리보기 업데이트
+    const previewEl = document.getElementById('syncUrlPreview');
+    if (previewEl) {
+      previewEl.textContent = state.sheetUrl || DEFAULT_SHEET_URL;
+    }
 
     const statusText = document.getElementById('assignStatusText');
     const statusSub = document.getElementById('assignStatusPill');
@@ -471,7 +761,7 @@
   }
 
   // ==========================================
-  // 7. Fisher-Yates 셔플 & 1초에 1명씩 공개 시스템
+  // 8. Fisher-Yates 셔플 & 1초에 1명씩 공개 시스템
   // ==========================================
   function shuffleArray(array) {
     const arr = [...array];
@@ -482,23 +772,21 @@
     return arr;
   }
 
-  // 역할 배정 시작 (화면 흐려짐 및 순차 공개 오버레이 트리거)
   function startSequentialAssignment() {
     if (state.isRevealing) return;
 
     if (state.students.length === 0) {
-      showToast('⚠️ 학생 명단이 없습니다. CONFIG에서 추가하세요.', 'info');
+      showToast('⚠️ 학생 명단이 없습니다. 명단 편집 또는 시트 불러오기를 실행하세요.', 'warning');
       return;
     }
     if (state.roles.length === 0) {
-      showToast('⚠️ 역할 카탈로그가 비어 있습니다. CONFIG에서 추가하세요.', 'info');
+      showToast('⚠️ 역할 카탈로그가 비어 있습니다. 명단 편집 또는 시트 불러오기를 실행하세요.', 'warning');
       return;
     }
 
     state.isRevealing = true;
     SoundFX.init();
 
-    // 셔플된 매칭 목록 사전 생성
     const students = [...state.students];
     const roles = [...state.roles];
 
@@ -525,43 +813,35 @@
       };
     });
 
-    // 화면 흐려짐 오버레이 활성화
     const overlay = document.getElementById('revealOverlay');
     overlay.style.display = 'flex';
 
-    // 히스토리 스트립 초기화
     const historyStrip = document.getElementById('revealHistoryStrip');
     historyStrip.innerHTML = '';
 
     let currentIndex = 0;
     const totalCount = state.pendingAssignments.length;
 
-    // 첫 번째 학생 즉시 공개
     revealOneStudent(currentIndex, totalCount);
 
-    // 1초 간격으로 1명씩 공개
     state.revealTimer = setInterval(() => {
       currentIndex++;
       if (currentIndex < totalCount) {
         revealOneStudent(currentIndex, totalCount);
       } else {
-        // 모든 인원 공개 완료
         finishAssignment(true);
       }
     }, 1000);
   }
 
-  // 1명의 학생을 스포트라이트 카드에 노출
   function revealOneStudent(index, total) {
     const item = state.pendingAssignments[index];
     if (!item) return;
 
-    // 카운터 및 진행률 갱신
     document.getElementById('revealCounter').textContent = `${index + 1} / ${total}`;
     const progressPercent = Math.min(100, Math.round(((index + 1) / total) * 100));
     document.getElementById('revealProgressFill').style.width = `${progressPercent}%`;
 
-    // 스포트라이트 카드 데이터 바인딩
     document.getElementById('spotlightOrderTag').textContent = `NO. ${String(index + 1).padStart(2, '0')}`;
     document.getElementById('spotlightAvatar').textContent = item.avatar;
     document.getElementById('spotlightStudentName').textContent = item.student;
@@ -569,13 +849,11 @@
     document.getElementById('spotlightRoleName').textContent = item.role;
     document.getElementById('spotlightRoleDesc').textContent = item.desc;
 
-    // 카드 애니메이션 리플레이
     const spotlightCard = document.getElementById('revealSpotlightCard');
     spotlightCard.classList.remove('pop');
-    void spotlightCard.offsetWidth; // trigger reflow
+    void spotlightCard.offsetWidth;
     spotlightCard.classList.add('pop');
 
-    // 하단 히스토리 칩 추가
     const historyStrip = document.getElementById('revealHistoryStrip');
     const chip = document.createElement('div');
     chip.className = 'reveal-chip';
@@ -588,18 +866,18 @@
     historyStrip.appendChild(chip);
     historyStrip.scrollLeft = historyStrip.scrollWidth;
 
-    // 사운드 재생
     SoundFX.playRevealTick(index);
   }
 
-  // 즉시 일괄 공개 (Fast-forward) 버튼 처리
   function fastForwardReveal() {
     if (!state.isRevealing) return;
-    clearInterval(state.revealTimer);
+    if (state.revealTimer) {
+      clearInterval(state.revealTimer);
+      state.revealTimer = null;
+    }
     finishAssignment(false);
   }
 
-  // 최종 배정 확정 및 오버레이 닫기
   function finishAssignment(isNaturalFinish = true) {
     if (state.revealTimer) {
       clearInterval(state.revealTimer);
@@ -609,12 +887,10 @@
     state.assignments = [...state.pendingAssignments];
     state.isRevealing = false;
 
-    // 팡파르 및 축하 파티클
     SoundFX.playFanfare();
     Confetti.burst();
 
-    // 약간의 딜레이 후 오버레이 닫고 메인 그리드 노출
-    const delay = isNaturalFinish ? 900 : 250;
+    const delay = isNaturalFinish ? 900 : 200;
     setTimeout(() => {
       const overlay = document.getElementById('revealOverlay');
       overlay.style.display = 'none';
@@ -628,7 +904,7 @@
   }
 
   // ==========================================
-  // 8. 개별 스왑 (SWAP) 모달
+  // 9. 개별 스왑 (SWAP) 모달
   // ==========================================
   function openSwapModal(index) {
     if (state.isRevealing) return;
@@ -709,7 +985,7 @@
   }
 
   // ==========================================
-  // 9. 명단 및 카탈로그 관리 모달
+  // 10. 명단 및 카탈로그 관리 모달
   // ==========================================
   function openManageModal() {
     document.getElementById('studentTextarea').value = state.students.join('\n');
@@ -763,14 +1039,14 @@
     renderCards(false);
 
     document.getElementById('manageModal').style.display = 'none';
-    showToast('CONFIG SAVED: 학생 명단과 역할 목록이 동기화되었습니다.', 'success');
+    showToast('💾 학생 명단과 역할 목록이 업데이트되었습니다.', 'success');
   }
 
   // ==========================================
-  // 10. 스프레드시트 모달 & Apps Script 연동
+  // 11. 구글 스프레드시트 설정 모달 & 내보내기
   // ==========================================
-  function openSheetModal() {
-    document.getElementById('scriptUrlInput').value = state.sheetUrl || '';
+  function openSheetConfigModal() {
+    document.getElementById('scriptUrlInput').value = state.sheetUrl || DEFAULT_SHEET_URL;
     document.getElementById('sheetModal').style.display = 'flex';
   }
 
@@ -791,10 +1067,10 @@
     });
 
     navigator.clipboard.writeText(tsv).then(() => {
-      showToast('📋 CLIPBOARD COPIED: 스프레드시트에서 Ctrl+V 하세요.', 'success');
+      showToast('📋 스프레드시트용 표 데이터가 클립보드에 복사되었습니다! Ctrl+V 하세요.', 'success');
     }).catch(err => {
       console.error(err);
-      showToast('⚠️ 클립보드 복사 실패', 'info');
+      showToast('⚠️ 클립보드 복사 실패', 'warning');
     });
   }
 
@@ -823,51 +1099,11 @@
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast('📥 CSV EXPORT COMPLETE: 다운로드가 완료되었습니다.', 'success');
-  }
-
-  async function executeSheetSync() {
-    const url = document.getElementById('scriptUrlInput').value.trim();
-    if (!url) {
-      showToast('⚠️ Google Apps Script Web App URL을 입력하세요.', 'info');
-      return;
-    }
-
-    state.sheetUrl = url;
-    saveStateToStorage();
-
-    showToast('🔄 SYNCING WITH GOOGLE SHEETS...', 'info');
-
-    try {
-      const payload = {
-        className: state.className,
-        date: new Date().toISOString(),
-        assignments: state.assignments.length > 0 ? state.assignments : state.students.map((s, i) => ({
-          student: s,
-          role: state.roles[i]?.name || '미배정',
-          desc: state.roles[i]?.desc || ''
-        }))
-      };
-
-      await fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      showToast('✅ SYNC COMPLETED: 스프레드시트에 저장되었습니다.', 'success');
-      document.getElementById('sheetModal').style.display = 'none';
-    } catch (err) {
-      console.warn('Apps Script error:', err);
-      showToast('⚠️ 시트 통신 오류 확인. 클립보드 복사를 권장합니다.', 'info');
-    }
+    showToast('📥 CSV 파일 다운로드가 완료되었습니다.', 'success');
   }
 
   // ==========================================
-  // 11. 토스트 알림 헬퍼
+  // 12. 토스트 알림 헬퍼
   // ==========================================
   function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
@@ -886,7 +1122,7 @@
       setTimeout(() => {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
       }, 300);
-    }, 3000);
+    }, 3200);
   }
 
   function escapeHtml(text) {
@@ -900,31 +1136,31 @@
   }
 
   // ==========================================
-  // 12. 이벤트 바인딩
+  // 13. 이벤트 바인딩
   // ==========================================
   function initEvents() {
-    // [🎲 역할 배정하기] 버튼 클릭 -> 순차 공개 오버레이 시작
+    // 🎲 역할 배정하기
     document.getElementById('btnAssign').addEventListener('click', () => {
       startSequentialAssignment();
     });
 
-    // ⏩ 즉시 일괄 공개 버튼
+    // ⏩ 즉시 일괄 공개
     document.getElementById('btnFastForward').addEventListener('click', () => {
       fastForwardReveal();
     });
 
-    // 초기화 버튼
+    // ↺ 초기화
     document.getElementById('btnReset').addEventListener('click', () => {
       if (confirm('현재 배정된 역할을 초기화하시겠습니까?')) {
         state.assignments = [];
         saveStateToStorage();
         updateHeaderSummary();
         renderCards(false);
-        showToast('↺ RESET COMPLETE: 배정 상태가 초기화되었습니다.', 'info');
+        showToast('↺ 배정 상태가 초기화되었습니다.', 'info');
       }
     });
 
-    // A4 인쇄하기
+    // 🖨️ A4 인쇄
     document.getElementById('btnPrint').addEventListener('click', () => {
       SoundFX.playClick();
       renderPrintTable(state.assignments.length > 0 ? state.assignments : state.students.map((s, i) => ({
@@ -937,12 +1173,84 @@
       window.print();
     });
 
-    // 사운드 토글
+    // 🔊 사운드 토글
     document.getElementById('btnSoundToggle').addEventListener('click', () => {
       state.soundEnabled = !state.soundEnabled;
       updateHeaderSummary();
       saveStateToStorage();
       if (state.soundEnabled) SoundFX.playClick();
+    });
+
+    // 🔄 시트에서 불러오기 버튼들 (내비게이션, 상단 배너, 모달 내)
+    document.getElementById('btnLoadSheet').addEventListener('click', () => {
+      fetchFromGoogleSheet({ isInitial: false });
+    });
+    document.getElementById('btnBannerLoad').addEventListener('click', () => {
+      fetchFromGoogleSheet({ isInitial: false });
+    });
+    document.getElementById('btnModalExecuteLoad').addEventListener('click', () => {
+      fetchFromGoogleSheet({ isInitial: false });
+    });
+
+    // 💾 시트에 결과 저장 버튼들 (내비게이션, 상단 배너, 모달 내)
+    document.getElementById('btnSaveSheet').addEventListener('click', () => {
+      saveToGoogleSheet();
+    });
+    document.getElementById('btnBannerSave').addEventListener('click', () => {
+      saveToGoogleSheet();
+    });
+    document.getElementById('btnModalExecuteSave').addEventListener('click', () => {
+      saveToGoogleSheet();
+    });
+
+    // ⚙️ 시트 URL 설정 모달 열기
+    document.getElementById('btnSheetConfig').addEventListener('click', openSheetConfigModal);
+    const syncPreview = document.getElementById('syncUrlPreview');
+    if (syncPreview) {
+      syncPreview.addEventListener('click', openSheetConfigModal);
+    }
+
+    // 모달 닫기
+    document.getElementById('btnCloseSheetModal').addEventListener('click', () => {
+      document.getElementById('sheetModal').style.display = 'none';
+    });
+    document.getElementById('btnCancelSheetModal').addEventListener('click', () => {
+      document.getElementById('sheetModal').style.display = 'none';
+    });
+
+    // 시트 URL 저장 버튼
+    document.getElementById('btnSaveScriptUrl').addEventListener('click', () => {
+      const input = document.getElementById('scriptUrlInput');
+      const val = input.value.trim();
+      if (!val) {
+        showToast('⚠️ 유효한 웹앱 주소(URL)를 입력해 주세요.', 'warning');
+        return;
+      }
+      state.sheetUrl = val;
+      saveStateToStorage();
+      updateHeaderSummary();
+      showToast('🔗 Apps Script 웹앱 URL이 저장되었습니다!', 'success');
+    });
+
+    // 기본 URL 복원 버튼
+    document.getElementById('btnResetDefaultUrl').addEventListener('click', () => {
+      state.sheetUrl = DEFAULT_SHEET_URL;
+      document.getElementById('scriptUrlInput').value = DEFAULT_SHEET_URL;
+      saveStateToStorage();
+      updateHeaderSummary();
+      showToast('🔄 기본 웹앱 URL로 복원되었습니다.', 'info');
+    });
+
+    // TSV 클립보드 복사 & CSV 다운로드
+    document.getElementById('btnCopyTsv').addEventListener('click', copyTableToClipboard);
+    document.getElementById('btnDownloadCsv').addEventListener('click', downloadCsv);
+
+    // Apps Script 코드 복사
+    document.getElementById('btnCopyGasCode').addEventListener('click', () => {
+      const code = document.getElementById('gasCodeTemplate').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('📋 Apps Script 배포 코드가 복사되었습니다.', 'success');
+      });
     });
 
     // 명단 편집 모달
@@ -965,32 +1273,6 @@
     });
     document.getElementById('studentTextarea').addEventListener('input', updateEditCounts);
     document.getElementById('roleTextarea').addEventListener('input', updateEditCounts);
-
-    // 스프레드시트 모달
-    document.getElementById('btnLoadSheet').addEventListener('click', openSheetModal);
-    document.getElementById('btnSaveSheet').addEventListener('click', openSheetModal);
-    document.getElementById('btnCloseSheetModal').addEventListener('click', () => {
-      document.getElementById('sheetModal').style.display = 'none';
-    });
-    document.getElementById('btnCancelSheetModal').addEventListener('click', () => {
-      document.getElementById('sheetModal').style.display = 'none';
-    });
-    document.getElementById('btnSaveScriptUrl').addEventListener('click', () => {
-      const url = document.getElementById('scriptUrlInput').value.trim();
-      state.sheetUrl = url;
-      saveStateToStorage();
-      showToast('🔗 Apps Script Web App URL이 저장되었습니다.', 'success');
-    });
-    document.getElementById('btnCopyTsv').addEventListener('click', copyTableToClipboard);
-    document.getElementById('btnDownloadCsv').addEventListener('click', downloadCsv);
-    document.getElementById('btnExecuteSheetSync').addEventListener('click', executeSheetSync);
-
-    document.getElementById('btnCopyGasCode').addEventListener('click', () => {
-      const code = document.getElementById('gasCodeTemplate').textContent;
-      navigator.clipboard.writeText(code).then(() => {
-        showToast('📋 Apps Script 코드가 복사되었습니다.', 'success');
-      });
-    });
 
     // 스왑 모달
     document.getElementById('btnCloseSwapModal').addEventListener('click', () => {
@@ -1021,7 +1303,7 @@
   }
 
   // ==========================================
-  // 13. 초기화 실행
+  // 14. 앱 부트스트랩 (초기화)
   // ==========================================
   function bootstrap() {
     loadStateFromStorage();
@@ -1029,6 +1311,9 @@
     updateHeaderSummary();
     renderCards(false);
     initEvents();
+
+    // 페이지 진입 시 구글 스프레드시트 데이터 자동 동기화 시도 (GET)
+    fetchFromGoogleSheet({ isInitial: true });
   }
 
   if (document.readyState === 'loading') {
